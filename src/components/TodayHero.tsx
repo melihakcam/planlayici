@@ -68,32 +68,35 @@ export default function TodayHero({
   const score = p?.score ?? 0;
 
   return (
-    <section className="card animate-rise overflow-hidden p-0">
-      <div className="grid gap-5 p-5 md:grid-cols-[auto_1fr] md:p-6 lg:grid-cols-[auto_1fr_auto]">
-        <Ring value={score} size={132} stroke={12} label={`Günlük hedefin yüzde ${Math.round(score * 100)} tamamlandı`}>
+    <section className="hero-gradient glow animate-rise relative overflow-hidden rounded-3xl text-white">
+      {/* yumuşak ışık lekeleri */}
+      <span className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-white/20 blur-3xl" aria-hidden />
+      <span className="pointer-events-none absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-fuchsia-300/30 blur-3xl" aria-hidden />
+      <div className="relative grid gap-5 p-5 md:grid-cols-[auto_1fr] md:p-7 lg:grid-cols-[auto_1fr_auto]">
+        <Ring value={score} size={132} stroke={12} color="#ffffff" track="rgb(255 255 255 / 0.25)" label={`Günlük hedefin yüzde ${Math.round(score * 100)} tamamlandı`}>
           <span className="text-3xl font-extrabold tabular-nums tracking-tight">{Math.round(score * 100)}%</span>
-          <span className="muted text-[11px] font-medium">günlük hedef</span>
+          <span className="text-[11px] font-medium text-white/80">günlük hedef</span>
         </Ring>
 
         <div className="flex min-w-0 flex-col justify-center gap-3">
           <div>
-            <p className="muted text-sm font-medium">
+            <p className="text-sm font-medium text-white/80">
               {new Date(now).toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long" })}
             </p>
-            <h1 className="text-2xl font-extrabold tracking-tight md:text-3xl">{greeting(hour)}</h1>
-            <p className="mt-1 text-[15px]">{line}</p>
+            <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">{greeting(hour)}</h1>
+            <p className="mt-1 text-[15px] text-white/95">{line}</p>
             {next && (
-              <p className="muted mt-1 text-sm">
-                Sıradaki: <span className="font-semibold text-[var(--text)]">{next.title}</span> · {fmtTime(next.start)} (
+              <p className="mt-1 text-sm text-white/80">
+                Sıradaki: <span className="font-semibold text-white">{next.title}</span> · {fmtTime(next.start)} (
                 {fmtMinutes(Math.round((next.start_ms - now) / 60_000))} sonra)
               </p>
             )}
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link href={cta.href} className="btn-primary px-5 text-[15px]">
+            <Link href={cta.href} className="btn cta-pulse bg-white px-5 text-[15px] text-violet-700 shadow-lg hover:bg-white/90">
               <CtaIcon size={18} /> {cta.label}
             </Link>
-            <button className="btn-ghost" onClick={onNewEvent}>
+            <button className="btn border border-white/40 text-white hover:bg-white/15" onClick={onNewEvent}>
               <CalendarPlus size={16} /> Etkinlik
             </button>
           </div>
@@ -102,12 +105,12 @@ export default function TodayHero({
         <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:col-span-2 lg:col-span-1 lg:w-56 lg:grid-cols-1">
           <Mini
             icon={<Timer size={16} />}
-            tone="text-success-600 dark:text-success-500"
+            tone=""
             label="Odak"
             value={`${p?.focusMinutes ?? 0}/${p?.focusGoal ?? 120} dk`}
           />
-          <Mini icon={<Star size={16} />} tone="text-streak-600 dark:text-streak-500" label="En önemli" value={`${p?.topDone ?? 0}/${p?.topTotal ?? 0}`} />
-          <Mini icon={<Target size={16} />} tone="text-brand-600 dark:text-brand-500" label="Boş zaman" value={fmtMinutes(freeMin)} />
+          <Mini icon={<Star size={16} />} tone="" label="En önemli" value={`${p?.topDone ?? 0}/${p?.topTotal ?? 0}`} />
+          <Mini icon={<Target size={16} />} tone="" label="Boş zaman" value={fmtMinutes(freeMin)} />
         </dl>
       </div>
     </section>
@@ -116,8 +119,8 @@ export default function TodayHero({
 
 function Mini({ icon, tone, label, value }: { icon: React.ReactNode; tone: string; label: string; value: string }) {
   return (
-    <div className="surface-2 rounded-xl px-3 py-2">
-      <dt className={`flex items-center gap-1.5 text-xs font-semibold ${tone}`}>
+    <div className="rounded-2xl bg-white/15 px-3 py-2 ring-1 ring-white/25 backdrop-blur-md">
+      <dt className={`flex items-center gap-1.5 text-xs font-semibold text-white/85 ${tone}`}>
         {icon}
         {label}
       </dt>

@@ -3,7 +3,6 @@
 import {
   AlertCircle,
   BarChart3,
-  BookOpen,
   CalendarCheck2,
   CalendarDays,
   CheckCircle2,
@@ -52,7 +51,6 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
       { href: "/aliskanliklar", label: "Alışkanlıklar", icon: Flame },
       { href: "/haftalik", label: "Haftalık", icon: CalendarRange },
       { href: "/istatistik", label: "İstatistik", icon: BarChart3 },
-      { href: "/gunluk", label: "Günlük", icon: BookOpen },
     ],
   },
 ];

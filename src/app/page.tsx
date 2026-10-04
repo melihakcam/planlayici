@@ -101,7 +101,12 @@ export default function TodayPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="vivid stagger mx-auto max-w-6xl space-y-6">
+      <div className="vivid-bg" aria-hidden>
+        <span />
+        <span />
+        <span />
+      </div>
       <TodayHero
         events={events.data ?? []}
         tasks={tasks.data ?? []}
@@ -127,7 +132,7 @@ export default function TodayPage() {
 
 
       <div className="grid gap-6 lg:grid-cols-5">
-        <section className="card lg:col-span-3">
+        <section className="card lift lg:col-span-3">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-semibold">Bugünün programı</h2>
             <Link href="/takvim" className="text-sm text-brand-600 hover:underline">
@@ -188,7 +193,7 @@ export default function TodayPage() {
         <div className="space-y-6 lg:col-span-2">
           <TopThree tasks={tasks.data ?? []} today={today} onToggle={toggleTask} />
 
-          <section className="card">
+          <section className="card lift">
             <h2 className="mb-3 font-semibold">Bugünkü görevler</h2>
             <QuickAdd projects={projects.data ?? []} defaults={{ due: today }} onAdded={tasks.reload} placeholder="Bugün için görev ekle…" />
             <div className="mt-3 space-y-0.5">
@@ -202,7 +207,7 @@ export default function TodayPage() {
             </Link>
           </section>
 
-          <section className="card">
+          <section className="card lift">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-semibold">Alışkanlıklar</h2>
               <Link href="/aliskanliklar" className="text-sm text-brand-600 hover:underline">
@@ -265,10 +270,10 @@ function TopThree({ tasks, today, onToggle }: { tasks: Task[]; today: string; on
   const top = tasks.filter((t) => t.top_date === today && !t.parent_id);
   const done = top.filter((t) => t.status === "done").length;
   return (
-    <section className="card border-orange-200 dark:border-orange-500/25">
+    <section className="card lift gradient-border">
       <div className="mb-2 flex items-center justify-between">
         <h2 className="flex items-center gap-2 font-semibold">
-          <Star size={18} className="text-streak-600" fill="currentColor" /> Günün en önemli 3 işi
+          <Star size={18} className="text-streak-600" fill="currentColor" /> <span className="text-gradient">Günün en önemli 3 işi</span>
         </h2>
         {top.length > 0 && (
           <span className="chip bg-orange-100 text-streak-600 dark:bg-orange-500/15 dark:text-streak-500">

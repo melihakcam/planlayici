@@ -6,6 +6,7 @@ export function Ring({
   color = "var(--primary)",
   children,
   label,
+  track,
 }: {
   value: number;
   size?: number;
@@ -13,6 +14,8 @@ export function Ring({
   color?: string;
   children?: React.ReactNode;
   label: string;
+  /** İz rengi (varsayılan: temaya göre gri) */
+  track?: string;
 }) {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
@@ -20,7 +23,7 @@ export function Ring({
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }} role="img" aria-label={label}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={stroke} className="stroke-black/[0.06] dark:stroke-white/[0.08]" />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={stroke} stroke={track} className={track ? undefined : "stroke-black/[0.06] dark:stroke-white/[0.08]"} />
         <circle
           cx={size / 2}
           cy={size / 2}
