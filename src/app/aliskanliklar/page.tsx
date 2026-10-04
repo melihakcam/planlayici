@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, Check, Pencil, Plus, Trash2 } from "lucide-react";
+import { Archive, Check, Flame, Pencil, Plus, Sprout, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import Modal from "@/components/Modal";
 import { onChanged, toast } from "@/components/toast";
@@ -50,7 +50,7 @@ export default function HabitsPage() {
 
       {habits.data?.length === 0 && (
         <div className="card py-12 text-center">
-          <p className="text-3xl">🌱</p>
+          <Sprout size={32} className="mx-auto text-success-600" aria-hidden />
           <p className="muted mt-2 text-sm">Henüz alışkanlık yok. Su içmek, spor, okuma gibi bir rutinle başla.</p>
         </div>
       )}
@@ -82,7 +82,7 @@ export default function HabitsPage() {
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-bold">🔥 {h.streak}</p>
+                  <p className="flex items-center justify-end gap-1 text-lg font-bold text-streak-600 dark:text-streak-500" aria-label={`${h.streak} günlük seri`}><Flame size={18} fill="currentColor" aria-hidden /> {h.streak}</p>
                   <p className="muted text-xs">%{rate} · 30 gün</p>
                 </div>
                 <button className="btn-ghost border-0 p-1.5" onClick={() => setEditing(h)} aria-label="Düzenle">

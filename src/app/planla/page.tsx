@@ -159,7 +159,7 @@ export default function PlanPage() {
             <h2 className="font-semibold">Dünden kalanlar</h2>
             <p className="muted text-sm">Yapılamamış işler birikmesin; her biri için bir karar ver.</p>
           </div>
-          {leftovers.length === 0 && <p className="py-6 text-center text-sm">Hepsi halledildi ✨</p>}
+          {leftovers.length === 0 && <p className="py-6 text-center text-sm">Hepsi halledildi</p>}
           <ul className="space-y-2">
             {leftovers.map((t) => (
               <li key={t.id} className="rounded-xl border border-theme p-3">

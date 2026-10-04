@@ -167,7 +167,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             const msg = `${mins} dakika sonra başlıyor${e.location ? ` · ${e.location}` : ""}`;
             if ("Notification" in window && Notification.permission === "granted") {
               new Notification(e.title, { body: msg });
-            } else toast(`⏰ ${e.title} — ${msg}`);
+            } else toast(`Hatırlatma: ${e.title} — ${msg}`);
           }
         }
       } catch {}
@@ -197,6 +197,12 @@ function Shell({ children }: { children: React.ReactNode }) {
       clearTimeout(first);
       clearInterval(t);
     };
+  }, []);
+
+  // Telefona kurulum (PWA): service worker yalnızca üretim derlemesinde kaydedilir
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "production" || !("serviceWorker" in navigator)) return;
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
   }, []);
 
   // Hızlı yakalama: her sayfada "+" düğmesi ve N kısayolu

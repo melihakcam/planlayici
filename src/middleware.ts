@@ -21,5 +21,5 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   // Giriş sayfası, günlük görev ve statik dosyalar hariç her şey korunur.
-  matcher: ["/((?!_next/static|_next/image|icon\\.svg|favicon\\.ico|manifest\\.webmanifest|giris|api/giris|api/cron).*)"],
+  matcher: ["/((?!_next/static|_next/image|icon\\.svg|favicon\\.ico|manifest\\.webmanifest|sw\\.js|offline\\.html|icons/|giris|api/giris|api/cron).*)"],
 };

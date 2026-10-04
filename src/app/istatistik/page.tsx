@@ -1,5 +1,6 @@
 "use client";
 
+import { Flame } from "lucide-react";
 import { useState } from "react";
 import { fmtDate, fmtMinutes, useApi } from "@/lib/client";
 
@@ -34,7 +35,7 @@ export default function StatsPage() {
       </header>
 
       {!data ? (
-        <p className="muted text-sm">Yükleniyor…</p>
+        <div className="space-y-3" aria-busy="true" aria-label="Yükleniyor"><div className="skeleton h-28" /><div className="skeleton h-28" /><div className="skeleton h-28" /></div>
       ) : (
         <>
           <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -78,7 +79,7 @@ export default function StatsPage() {
                     <div className="h-full rounded-full bg-brand-600" style={{ width: `${Math.round(h.rate * 100)}%` }} />
                   </div>
                   <span className="w-12 text-right text-sm tabular-nums">%{Math.round(h.rate * 100)}</span>
-                  <span className="muted w-14 text-right text-xs">🔥 {h.streak}</span>
+                  <span className="flex w-14 items-center justify-end gap-0.5 text-xs font-semibold text-streak-600 dark:text-streak-500" aria-label={`${h.streak} günlük seri`}><Flame size={12} fill="currentColor" aria-hidden /> {h.streak}</span>
                 </div>
               ))}
             </div>

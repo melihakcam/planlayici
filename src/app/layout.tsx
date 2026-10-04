@@ -15,6 +15,7 @@ export const metadata: Metadata = {
   description: "Günün planı, odak ve projeler tek yerde",
   applicationName: "Planlayıcı",
   appleWebApp: { capable: true, title: "Planlayıcı", statusBarStyle: "default" },
+  icons: { apple: "/icons/apple-touch-icon.png" },
 };
 
 export const viewport: Viewport = {

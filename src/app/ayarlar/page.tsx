@@ -43,7 +43,7 @@ const WEEKDAYS_LONG = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe",
 const ROLE_LABEL: Record<string, string> = { owner: "Sahibi", writer: "Düzenleyebilir", reader: "Salt okunur", local: "Sadece planlayıcıda" };
 
 const GOOGLE_MESSAGES: Record<string, [string, "success" | "error" | "info"]> = {
-  baglandi: ["Google Takvim bağlandı ve senkronize edildi 🎉", "success"],
+  baglandi: ["Google Takvim bağlandı ve senkronize edildi", "success"],
   iptal: ["Google bağlantısı iptal edildi", "info"],
   gecersiz: ["Güvenlik doğrulaması başarısız, tekrar deneyin", "error"],
   hata: ["Google bağlantısı kurulamadı. Terminal çıktısını kontrol edin.", "error"],
@@ -115,7 +115,7 @@ export default function SettingsPage() {
     if (!("Notification" in window)) return toast("Tarayıcınız bildirimleri desteklemiyor", "error");
     const p = await Notification.requestPermission();
     setPerm(p);
-    if (p === "granted") new Notification("Bildirimler açık ✅", { body: "Etkinliklerden önce hatırlatacağım." });
+    if (p === "granted") new Notification("Bildirimler açık", { body: "Etkinliklerden önce hatırlatacağım." });
   };
 
   const toggleCalendar = async (c: CalendarRow) => {
@@ -169,7 +169,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {!g && <p className="muted text-sm">Yükleniyor…</p>}
+        {!g && <div className="space-y-3" aria-busy="true" aria-label="Yükleniyor"><div className="skeleton h-12" /></div>}
 
         {g && !g.configured && (
           <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">

@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { CalendarClock, Flag, Plus, Repeat, Timer } from "lucide-react";
 import { useState } from "react";
 import { api, relDay } from "@/lib/client";
 import { parseTask } from "@/lib/parse";
@@ -68,13 +68,13 @@ export default function QuickAdd({
       </div>
       {p && (p.due || p.priority || p.duration || p.project || p.repeat) && (
         <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
-          {p.due && <span className="chip bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-100">📅 {relDay(p.due)}</span>}
-          {p.duration && <span className="chip bg-gray-100 dark:bg-white/10">⏱ {p.duration} dk</span>}
-          {p.priority && <span className="chip bg-red-50 text-red-700 dark:bg-red-500/15">🚩 {PRIORITY_LABEL[p.priority]}</span>}
+          {p.due && <span className="chip bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-100"><CalendarClock size={12} aria-hidden /> {relDay(p.due)}</span>}
+          {p.duration && <span className="chip bg-gray-100 dark:bg-white/10"><Timer size={12} aria-hidden /> {p.duration} dk</span>}
+          {p.priority && <span className="chip bg-red-50 text-red-700 dark:bg-red-500/15"><Flag size={12} aria-hidden /> {PRIORITY_LABEL[p.priority]}</span>}
           {p.project && <span className="chip bg-gray-100 dark:bg-white/10"># {p.project}{!project && " (yeni)"}</span>}
           {p.repeat && (
             <span className="chip bg-gray-100 dark:bg-white/10">
-              🔁 {{ daily: "Her gün", weekly: "Her hafta", monthly: "Her ay" }[p.repeat]}
+              <Repeat size={12} aria-hidden /> {{ daily: "Her gün", weekly: "Her hafta", monthly: "Her ay" }[p.repeat]}
             </span>
           )}
         </div>

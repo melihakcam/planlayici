@@ -18,7 +18,7 @@ function toFc(e: EventRow): EventInput {
   const color = eventColor(e);
   return {
     id: e.id,
-    title: `${e.recurring_event_id || e.series_id ? "🔁 " : ""}${e.task_id ? "✓ " : ""}${e.title}`,
+    title: `${e.recurring_event_id || e.series_id ? "↻ " : ""}${e.task_id ? "✓ " : ""}${e.title}`,
     start: e.start,
     end: e.end,
     allDay: Boolean(e.all_day),

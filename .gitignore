@@ -8,7 +8,6 @@ next-env.d.ts
 .vercel/
 
 # Kişisel dosyalar (ders programı, not fotoğrafları)
-*.jpeg
-*.jpg
-*.png
-!src/**/*.png
+/*.jpeg
+/*.jpg
+/*.png

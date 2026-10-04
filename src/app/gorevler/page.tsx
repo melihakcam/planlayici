@@ -196,7 +196,7 @@ export default function TasksPage() {
             </p>
           </div>
         )}
-        {tasks.loading && <p className="muted text-sm">Yükleniyor…</p>}
+        {tasks.loading && <div className="space-y-3" aria-busy="true" aria-label="Yükleniyor"><div className="skeleton h-16" /><div className="skeleton h-16" /><div className="skeleton h-16" /><div className="skeleton h-16" /></div>}
         {!tasks.loading && list.length === 0 && (
           <div className="card py-12 text-center">
             <ListTodo className="muted mx-auto mb-2" />

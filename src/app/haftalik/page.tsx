@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import AreaIcon from "@/components/AreaIcon";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -85,7 +85,7 @@ export default function WeekPage() {
       </header>
 
       {!w ? (
-        <p className="muted text-sm">Yükleniyor…</p>
+        <div className="space-y-3" aria-busy="true" aria-label="Yükleniyor"><div className="skeleton h-28" /><div className="skeleton h-28" /><div className="skeleton h-28" /></div>
       ) : (
         <>
           <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -128,7 +128,7 @@ export default function WeekPage() {
               <h2 className="font-semibold">Proje dengesi</h2>
               {w.projects.map((p) => {
                 const total = p.week_done_h + p.week_planned_h;
-                const status = p.weekly_hours === 0 ? "" : total >= p.weekly_hours ? "✅" : p.week_done_h === 0 && total === 0 ? "⚠️" : "";
+                const status = p.weekly_hours === 0 ? null : total >= p.weekly_hours ? "ok" : p.week_done_h === 0 && total === 0 ? "warn" : null;
                 return (
                   <div key={p.id} className="flex items-center gap-3 text-sm">
                     <span className="w-40 shrink-0 truncate">
@@ -141,7 +141,9 @@ export default function WeekPage() {
                     <span className="w-28 shrink-0 text-right text-xs tabular-nums">
                       {p.week_done_h}
                       {p.week_planned_h > 0 && <span className="muted">+{p.week_planned_h}</span>}
-                      {p.weekly_hours > 0 && ` / ${p.weekly_hours}`} sa {status}
+                      {p.weekly_hours > 0 && ` / ${p.weekly_hours}`} sa{" "}
+                      {status === "ok" && <CheckCircle2 size={14} className="inline text-success-600" aria-label="Hedef tamam" />}
+                      {status === "warn" && <AlertTriangle size={14} className="inline text-amber-600" aria-label="Bu hafta hiç zaman ayrılmadı" />}
                     </span>
                   </div>
                 );
@@ -162,7 +164,7 @@ export default function WeekPage() {
             </section>
             <section className="card">
               <h2 className="mb-2 font-semibold">Bu haftaya tarihli, bekleyenler ({w.open.length})</h2>
-              {w.open.length === 0 && <p className="muted text-sm">Bekleyen yok 🎉</p>}
+              {w.open.length === 0 && <p className="muted text-sm">Bekleyen yok</p>}
               <ul className="max-h-64 space-y-1 overflow-y-auto text-sm">
                 {w.open.map((t) => (
                   <li key={t.id} className="flex justify-between gap-2">

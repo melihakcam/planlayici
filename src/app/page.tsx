@@ -194,7 +194,7 @@ export default function TodayPage() {
             <h2 className="mb-3 font-semibold">Bugünkü görevler</h2>
             <QuickAdd projects={projects.data ?? []} defaults={{ due: today }} onAdded={tasks.reload} placeholder="Bugün için görev ekle…" />
             <div className="mt-3 space-y-0.5">
-              {todayTasks.length === 0 && <p className="muted py-4 text-center text-sm">Bugün için görev yok 🎉</p>}
+              {todayTasks.length === 0 && <p className="muted py-4 text-center text-sm">Bugün için görev yok</p>}
               {todayTasks.map((t) => (
                 <TaskItem key={t.id} task={t} project={projects.data?.find((p) => p.id === t.project_id)} onToggle={() => toggleTask(t)} />
               ))}
