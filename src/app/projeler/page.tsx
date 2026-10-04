@@ -1,17 +1,16 @@
 "use client";
 
-import { CalendarClock, FolderKanban, Plus, Trash2 } from "lucide-react";
-import AreaIcon from "@/components/AreaIcon";
+import { ArrowUpRight, CalendarClock, FolderKanban, Lightbulb, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import Modal from "@/components/Modal";
 import QuickAdd from "@/components/QuickAdd";
 import TaskItem from "@/components/TaskItem";
 import { onChanged, toast } from "@/components/toast";
 import { api, parseYmd, relDay, useApi, ymd } from "@/lib/client";
-import { AREAS, type Area, type ProjectStats, type Task } from "@/lib/types";
+import { type ProjectStats, type Task } from "@/lib/types";
 
 const COLORS = ["#6366f1", "#ec4899", "#f59e0b", "#10b981", "#06b6d4", "#ef4444", "#8b5cf6", "#64748b"];
-const STATUS_LABEL = { active: "Aktif", paused: "Beklemede", done: "Bitti" } as const;
+const STATUS_LABEL = { active: "Aktif", paused: "Beklemede", done: "Bitti", fikir: "Fikir" } as const;
 
 function daysLeft(date: string) {
   const diff = Math.round((parseYmd(date).getTime() - parseYmd(ymd(new Date())).getTime()) / 864e5);
@@ -21,7 +20,7 @@ function daysLeft(date: string) {
 }
 
 export default function ProjectsPage() {
-  const projects = useApi<ProjectStats[]>("/api/projects");
+  const projects = useApi<ProjectStats[]>("/api/projects?fikirler=1");
   const tasks = useApi<Task[]>("/api/tasks");
   const [editing, setEditing] = useState<Partial<ProjectStats> | null>(null);
   const [showArchived, setShowArchived] = useState(false);
@@ -33,7 +32,26 @@ export default function ProjectsPage() {
     }),
   );
 
-  const list = (projects.data ?? []).filter((p) => showArchived || p.status !== "done");
+  const list = (projects.data ?? []).filter((p) => p.status !== "fikir" && (showArchived || p.status !== "done"));
+  const ideas = (projects.data ?? []).filter((p) => p.status === "fikir");
+  const [idea, setIdea] = useState("");
+
+  const addIdea = async () => {
+    if (!idea.trim()) return;
+    await api("/api/projects", { body: { name: idea.trim(), status: "fikir", color: COLORS[(projects.data?.length ?? 0) % COLORS.length] } });
+    setIdea("");
+    projects.reload();
+  };
+  const promote = async (p: ProjectStats) => {
+    await api(`/api/projects/${p.id}`, { method: "PATCH", body: { status: "active" } });
+    toast(`"${p.name}" artık bir proje`, "success");
+    projects.reload();
+  };
+  const removeIdea = async (p: ProjectStats) => {
+    if (!confirm(`"${p.name}" fikri silinsin mi?`)) return;
+    await api(`/api/projects/${p.id}`, { method: "DELETE" });
+    projects.reload();
+  };
   const active = (projects.data ?? []).filter((p) => p.status === "active");
   const target = active.reduce((a, p) => a + p.weekly_hours, 0);
   const done = active.reduce((a, p) => a + p.week_done_h, 0);
@@ -51,7 +69,7 @@ export default function ProjectsPage() {
             <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
             Bitenleri göster
           </label>
-          <button className="btn-primary" onClick={() => setEditing({ area: "yazilim", color: COLORS[(projects.data?.length ?? 0) % COLORS.length], status: "active", weekly_hours: 0 })}>
+          <button className="btn-primary" onClick={() => setEditing({ area: "kisisel", color: COLORS[(projects.data?.length ?? 0) % COLORS.length], status: "active", weekly_hours: 0 })}>
             <Plus size={16} /> Yeni proje
           </button>
         </div>
@@ -65,27 +83,20 @@ export default function ProjectsPage() {
               {done} sa yapıldı · {planned} sa planlı · hedef {target} sa
             </span>
           </div>
-          <Bar done={done} planned={planned} target={target} color="#4f46e5" />
+          <Bar done={done} planned={planned} target={target} color="var(--primary)" />
         </section>
       )}
 
-      {projects.data?.length === 0 && (
+      {projects.data && list.length === 0 && (
         <div className="card py-12 text-center">
           <FolderKanban className="muted mx-auto mb-2" />
-          <p className="muted text-sm">Henüz proje yok. Okul, iş ve yazılım projelerini ekleyerek başla.</p>
+          <p className="muted text-sm">Henüz proje yok. "Yeni proje" ile ekle ya da aşağıdaki fikirlerden birini projeye dönüştür.</p>
         </div>
       )}
 
-      {(Object.keys(AREAS) as Area[]).map((area) => {
-        const items = list.filter((p) => p.area === area);
-        if (!items.length) return null;
-        return (
-          <section key={area} className="space-y-3">
-            <h2 className="text-sm font-semibold muted">
-              <AreaIcon area={area} className="mr-1 inline" /> {AREAS[area].label}
-            </h2>
+      {list.length > 0 && (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {items.map((p) => (
+              {list.map((p) => (
                 <button key={p.id} onClick={() => setEditing(p)} className={`card text-left transition hover:border-brand-500 ${p.status !== "active" ? "opacity-60" : ""}`}>
                   <div className="flex items-start gap-2">
                     <span className="mt-1.5 h-3 w-3 shrink-0 rounded-full" style={{ background: p.color }} />
@@ -120,9 +131,46 @@ export default function ProjectsPage() {
                 </button>
               ))}
             </div>
-          </section>
-        );
-      })}
+      )}
+
+      {/* Fikirler: aklına gelen, belki ileride proje olacak şeyler (planlamaya girmez) */}
+      <section className="card gradient-border space-y-3">
+        <div>
+          <h2 className="flex items-center gap-2 text-lg font-bold">
+            <Lightbulb size={20} className="text-amber-500" /> Fikirler
+          </h2>
+          <p className="muted text-sm">Aklına gelen proje fikirlerini buraya yaz. Başlamaya karar verince projeye dönüştür.</p>
+        </div>
+        <form
+          className="flex gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            addIdea();
+          }}
+        >
+          <input className="input" placeholder="Yeni fikir… (ör. tarla nem sensörüyle sulama uyarısı)" value={idea} onChange={(e) => setIdea(e.target.value)} aria-label="Yeni fikir" />
+          <button className="btn-primary shrink-0" disabled={!idea.trim()}>
+            <Plus size={16} /> Ekle
+          </button>
+        </form>
+        {ideas.length === 0 && <p className="muted text-sm">Henüz fikir yok.</p>}
+        <ul className="divide-y divide-[var(--border)]">
+          {ideas.map((p) => (
+            <li key={p.id} className="flex items-start gap-2 py-2">
+              <button className="min-w-0 flex-1 rounded-lg py-1 text-left" onClick={() => setEditing(p)}>
+                <p className="font-medium">{p.name}</p>
+                {p.notes && <p className="muted line-clamp-2 text-xs">{p.notes}</p>}
+              </button>
+              <button className="btn-ghost shrink-0 text-xs" onClick={() => promote(p)} title="Projeye dönüştür">
+                <ArrowUpRight size={14} /> Projeye dönüştür
+              </button>
+              <button className="btn-danger h-10 w-10 shrink-0 p-0" onClick={() => removeIdea(p)} aria-label={`"${p.name}" fikrini sil`}>
+                <Trash2 size={16} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <ProjectEditor
         project={editing}
@@ -200,17 +248,7 @@ function ProjectEditor({
     <Modal open onClose={onClose} title={isNew ? "Yeni proje" : (project.name ?? "Proje")} wide>
       <div className="space-y-4">
         <input autoFocus={isNew} className="input text-base font-medium" placeholder="Proje adı (ör. Çiftçi Takip, Bitirme Projesi)" value={f.name ?? ""} onChange={(e) => set({ name: e.target.value })} />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <label>
-            <span className="label">Alan</span>
-            <select className="input" value={f.area ?? "kisisel"} onChange={(e) => set({ area: e.target.value as Area })}>
-              {(Object.keys(AREAS) as Area[]).map((a) => (
-                <option key={a} value={a}>
-                  {AREAS[a].label}
-                </option>
-              ))}
-            </select>
-          </label>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <label>
             <span className="label">Durum</span>
             <select className="input" value={f.status ?? "active"} onChange={(e) => set({ status: e.target.value as ProjectStats["status"] })}>
@@ -238,7 +276,7 @@ function ProjectEditor({
             ))}
           </div>
         </div>
-        <textarea className="input min-h-16" placeholder="Notlar (hedef, bağlantılar, fikirler…)" value={f.notes ?? ""} onChange={(e) => set({ notes: e.target.value })} />
+        <textarea className="input min-h-16" placeholder="Notlar (fikrin detayı, hedef, bağlantılar…)" value={f.notes ?? ""} onChange={(e) => set({ notes: e.target.value })} />
 
         {!isNew && (
           <div className="rounded-xl border border-theme p-3">

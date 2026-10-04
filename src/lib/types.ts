@@ -88,7 +88,8 @@ export type Project = {
   color: string;
   created_at: string;
   area: Area;
-  status: "active" | "paused" | "done";
+  /** fikir = henüz başlanmamış proje fikri (planlamaya girmez) */
+  status: "active" | "paused" | "done" | "fikir";
   deadline: string | null;
   weekly_hours: number;
   notes: string;

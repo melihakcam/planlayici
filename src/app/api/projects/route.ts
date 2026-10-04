@@ -3,7 +3,10 @@ import { createProject, listProjectStats, type ProjectInput } from "@/lib/projec
 
 export const dynamic = "force-dynamic";
 
-/** Projeler + bu haftaki ilerleme */
-export const GET = route(async () => json(await listProjectStats()));
+/** Projeler + bu haftaki ilerleme. Fikirler yalnızca ?fikirler=1 ile gelir (Projeler sayfası). */
+export const GET = route(async (req) => {
+  const list = await listProjectStats();
+  return json(new URL(req.url).searchParams.get("fikirler") ? list : list.filter((p) => p.status !== "fikir"));
+});
 
 export const POST = route(async (req) => json(await createProject(await body<ProjectInput>(req)), 201));

@@ -274,7 +274,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <main id="icerik" className="min-w-0 flex-1 px-4 pb-28 pt-4 md:px-8 md:pb-10 md:pt-6">
+      <main id="icerik" className="min-w-0 flex-1 px-4 pb-28 pt-4 md:px-8 md:pb-28 md:pt-6">
         {/* Mobil üst çubuk */}
         <div className="mb-4 flex items-center justify-between md:hidden">
           <Link href="/" className="flex items-center gap-2">
