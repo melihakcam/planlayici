@@ -34,6 +34,8 @@ type Settings = {
   planCalendarId: string;
   daySchedule: Record<string, { start: string; end: string } | null> | null;
   autoReschedule: boolean;
+  dailyMaxMinutes: number;
+  dailyFocusGoal: number;
 };
 
 const WEEKDAYS_LONG = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
@@ -318,12 +320,29 @@ export default function SettingsPage() {
                 );
               })}
             </div>
+            <p className="muted -mb-2 text-xs">
+              Günlük sınır, akıllı planlamanın bir güne koyacağı görev bloklarının toplamıdır; ders ve sabit etkinlikler buna dahil değildir. 0 = sınır yok.
+            </p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <Field label="Kaç gün ileri planla">
                 <Num value={form.planDays} min={1} max={30} onChange={(v) => set({ planDays: v })} />
               </Field>
               <Field label="İşler arası mola (dk)">
                 <Num value={form.bufferMin} min={0} max={60} onChange={(v) => set({ bufferMin: v })} />
+              </Field>
+              <Field label="Günde en fazla iş (saat)">
+                <input
+                  type="number"
+                  className="input"
+                  min={0}
+                  max={16}
+                  step={0.5}
+                  value={form.dailyMaxMinutes / 60}
+                  onChange={(e) => set({ dailyMaxMinutes: Math.round(Math.min(16, Math.max(0, Number(e.target.value) || 0)) * 60) })}
+                />
+              </Field>
+              <Field label="Günlük odak hedefi (dk)">
+                <Num value={form.dailyFocusGoal} min={15} max={600} onChange={(v) => set({ dailyFocusGoal: v })} />
               </Field>
             </div>
             <label className="flex items-start gap-3 rounded-xl border border-theme p-3">

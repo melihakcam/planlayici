@@ -91,7 +91,10 @@ export default function CalendarView() {
     return () => d.destroy();
   }, [settings.data]);
 
-  const unscheduled = (tasks.data ?? []).filter((t) => t.status === "todo" && !t.event_id && !t.parent_id);
+  // Takvimde süresinin tamamı ayrılmamış işler (parçalı işlerde kalan kısım)
+  const unscheduled = (tasks.data ?? [])
+    .filter((t) => t.status === "todo" && !t.parent_id && (t.scheduled_min ?? 0) < t.duration_min)
+    .map((t) => ({ ...t, left: t.duration_min - (t.scheduled_min ?? 0) }));
 
   const move = async (info: EventDropArg | EventResizeDoneArg) => {
     const ev = info.event;
@@ -214,20 +217,20 @@ export default function CalendarView() {
           <Sparkles size={16} /> {planning ? "Planlanıyor…" : "Akıllı planla"}
         </button>
         <div ref={taskBox} className="max-h-[60vh] space-y-2 overflow-y-auto">
-          {unscheduled.length === 0 && <p className="muted py-4 text-center text-sm">Hepsi planlandı 🎉</p>}
+          {unscheduled.length === 0 && <p className="muted py-4 text-center text-sm">Hepsi planlandı</p>}
           {unscheduled.map((t) => (
             <div
               key={t.id}
               className="fc-task flex cursor-grab items-center gap-2 rounded-lg border border-theme p-2 text-sm active:cursor-grabbing"
               data-id={t.id}
               data-title={t.title}
-              data-duration={t.duration_min}
+              data-duration={t.chunk_min ? Math.min(t.chunk_min, t.left) : t.left}
               data-priority={t.priority}
               style={{ borderLeft: `4px solid ${PRIORITY_COLOR[t.priority]}` }}
             >
               <GripVertical size={14} className="muted shrink-0" />
               <span className="min-w-0 flex-1 truncate">{t.title}</span>
-              <span className="muted shrink-0 text-xs">{fmtMinutes(t.duration_min)}</span>
+              <span className="muted shrink-0 text-xs">{t.left < t.duration_min ? `${fmtMinutes(t.left)} kaldı` : fmtMinutes(t.duration_min)}</span>
             </div>
           ))}
         </div>

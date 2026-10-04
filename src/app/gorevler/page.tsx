@@ -7,7 +7,7 @@ import QuickAdd from "@/components/QuickAdd";
 import TaskItem from "@/components/TaskItem";
 import { onChanged, toast } from "@/components/toast";
 import { addDays, api, relDay, useApi, ymd } from "@/lib/client";
-import { PRIORITY_COLOR, PRIORITY_LABEL, type Project, type Task } from "@/lib/types";
+import { PRIORITY_COLOR, PRIORITY_LABEL, TIME_PREFS, type Project, type Task } from "@/lib/types";
 
 type Filter = "all" | "today" | "upcoming" | "nodate" | "done" | `p:${string}`;
 
@@ -297,6 +297,8 @@ function TaskEditor({
           duration_min: form.duration_min,
           project_id: form.project_id || null,
           repeat: form.repeat || null,
+          chunk_min: form.chunk_min || null,
+          time_pref: form.time_pref || null,
         },
       });
       onChanged();
@@ -319,12 +321,13 @@ function TaskEditor({
     setBusy(true);
     try {
       await save();
-      const r = await api<{ planned: { start: string }[] }>("/api/schedule", { body: { taskIds: [task.id] } });
+      const r = await api<{ planned: { start: string }[]; unplanned: { minutesLeft: number }[] }>("/api/schedule", { body: { taskIds: [task.id] } });
+      const first = r.planned[0];
       toast(
-        r.planned.length
-          ? `Planlandı: ${new Date(r.planned[0].start).toLocaleString("tr-TR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`
-          : "Uygun boş zaman bulunamadı",
-        r.planned.length ? "success" : "error",
+        first
+          ? `${r.planned.length > 1 ? `${r.planned.length} parça planlandı, ilki ` : "Planlandı: "}${new Date(first.start).toLocaleString("tr-TR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}${r.unplanned.length ? ` · ${r.unplanned[0].minutesLeft} dk sığmadı` : ""}`
+          : "Uygun boş zaman bulunamadı (günlük sınır ya da planlama saatleri dolu olabilir)",
+        first ? "success" : "error",
       );
       onChanged();
     } finally {
@@ -333,9 +336,8 @@ function TaskEditor({
   };
 
   const unschedule = async () => {
-    if (!task.event_id) return;
-    await api(`/api/events/${task.event_id}`, { method: "DELETE" });
-    toast("Takvimden kaldırıldı");
+    await api(`/api/tasks/${task.id}?only=blocks`, { method: "DELETE" });
+    toast("Gelecekteki zaman blokları takvimden kaldırıldı");
     onChanged();
     onClose();
   };
@@ -400,6 +402,28 @@ function TaskEditor({
             </select>
           </div>
           <div>
+            <span className="label">Parçalara böl</span>
+            <select className="input" value={form.chunk_min ?? ""} onChange={(e) => set({ chunk_min: e.target.value ? Number(e.target.value) : null })}>
+              <option value="">Tek blok</option>
+              {[30, 45, 60, 90, 120].map((m) => (
+                <option key={m} value={m}>
+                  {m} dk parçalar
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <span className="label">Zaman tercihi</span>
+            <select className="input" value={form.time_pref ?? ""} onChange={(e) => set({ time_pref: (e.target.value || null) as Task["time_pref"] })}>
+              <option value="">Fark etmez</option>
+              {Object.entries(TIME_PREFS).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
             <span className="label">Tekrar</span>
             <select
               className="input"
@@ -436,11 +460,22 @@ function TaskEditor({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs muted">
-          <span className="h-2 w-2 rounded-full" style={{ background: PRIORITY_COLOR[form.priority ?? 4] }} />
-          {task.event_start
-            ? `Takvimde: ${new Date(task.event_start).toLocaleString("tr-TR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}`
-            : "Henüz takvime yerleştirilmedi"}
+        <div className="surface-2 rounded-xl p-3 text-xs">
+          <div className="mb-1.5 flex items-center justify-between">
+            <span className="font-semibold">Takvimde ayrılan süre</span>
+            <span className="tabular-nums">
+              {task.scheduled_min ?? 0} / {form.duration_min ?? task.duration_min} dk
+            </span>
+          </div>
+          <div className="h-1.5 overflow-hidden rounded-full bg-black/[0.06] dark:bg-white/[0.08]">
+            <div className="h-full rounded-full bg-brand-600" style={{ width: `${Math.min(100, ((task.scheduled_min ?? 0) / (form.duration_min || task.duration_min)) * 100)}%` }} />
+          </div>
+          <p className="muted mt-1.5">
+            {task.event_start
+              ? `Sıradaki blok: ${new Date(task.event_start).toLocaleString("tr-TR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}`
+              : "Henüz takvime yerleştirilmedi"}
+            {form.chunk_min ? ` · ${form.chunk_min} dakikalık parçalarla, mümkünse farklı günlere dağıtılır` : ""}
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
@@ -448,16 +483,15 @@ function TaskEditor({
             <Trash2 size={16} /> Sil
           </button>
           <div className="flex flex-wrap gap-2">
-            {task.event_id ? (
+            {(task.scheduled_min ?? 0) > 0 && (
               <button className="btn-ghost" onClick={unschedule} disabled={busy}>
                 <CalendarX size={16} /> Takvimden kaldır
               </button>
-            ) : (
-              task.status === "todo" && (
-                <button className="btn-ghost" onClick={scheduleThis} disabled={busy}>
-                  <Sparkles size={16} /> Boş zamana yerleştir
-                </button>
-              )
+            )}
+            {task.status === "todo" && (task.scheduled_min ?? 0) < (form.duration_min ?? task.duration_min) && (
+              <button className="btn-ghost" onClick={scheduleThis} disabled={busy}>
+                <Sparkles size={16} /> {(task.scheduled_min ?? 0) > 0 ? "Kalanı yerleştir" : "Boş zamana yerleştir"}
+              </button>
             )}
             <button className="btn-primary" onClick={save} disabled={busy}>
               Kaydet

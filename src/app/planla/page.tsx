@@ -16,6 +16,8 @@ type PlanData = {
   events: EventRow[];
   taskBlocks: EventRow[];
   freeMinutes: number;
+  dailyMax: number;
+  taskMinutesToday: number;
   suggestions: Suggestion[];
   today: Task[];
 };
@@ -60,8 +62,11 @@ export default function PlanPage() {
 
   const selectedMinutes = candidates
     .filter((c) => selected.has(c.task.id) && !(c.task.event_start && ymd(new Date(c.task.event_start)) === today))
-    .reduce((a, c) => a + c.task.duration_min, 0);
-  const capacity = d?.freeMinutes ?? 0;
+    // Parçalı işte bugüne bir parça girer; kalan süre diğer günlere dağılır.
+    .reduce((a, c) => a + Math.min(c.task.chunk_min ?? Infinity, c.task.duration_min - (c.task.scheduled_min ?? 0)), 0);
+  const free = d?.freeMinutes ?? 0;
+  const dailyLeft = d?.dailyMax ? Math.max(0, d.dailyMax - d.taskMinutesToday) : Infinity;
+  const capacity = Math.min(free, dailyLeft);
   const ratio = capacity ? selectedMinutes / capacity : selectedMinutes ? 2 : 0;
 
   const leftoverAction = async (t: Task, action: "today" | "tomorrow" | "nodate" | "done") => {
@@ -246,7 +251,10 @@ export default function PlanPage() {
                 <span>
                   Seçilen: <b>{fmtMinutes(selectedMinutes)}</b>
                 </span>
-                <span className="muted">Boş zaman: {fmtMinutes(capacity)}</span>
+                <span className="muted">
+                  Kapasite: {fmtMinutes(capacity)}
+                  {dailyLeft < free ? ` (günlük sınır)` : ""}
+                </span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-black/[0.06] dark:bg-white/[0.08]">
                 <div
@@ -256,7 +264,7 @@ export default function PlanPage() {
               </div>
               {ratio > 1 && (
                 <p className="mt-1 text-xs text-red-600">
-                  Seçtiklerin boş zamandan {fmtMinutes(selectedMinutes - capacity)} fazla. Sığmayanlar yarına aktarılabilir.
+                  Seçtiklerin kapasiteden {fmtMinutes(selectedMinutes - capacity)} fazla. Sığmayanlar yarına aktarılabilir.
                 </p>
               )}
             </div>

@@ -3,6 +3,7 @@ import { deleteEvent, listEvents, syncNow } from "@/lib/events";
 import { body, json, route } from "@/lib/http";
 import { autoPlan, freeSlots } from "@/lib/scheduler";
 import { suggestTasks } from "@/lib/suggest";
+import { getSettings } from "@/lib/settings";
 import { listTasks } from "@/lib/tasks";
 
 export const dynamic = "force-dynamic";
@@ -18,8 +19,8 @@ export const GET = route(async (req) => {
     const [plan, missed] = await Promise.all([
       get<{ planned_at: string | null }>("SELECT planned_at FROM daily_plans WHERE date = ?", [today]),
       get<{ n: number }>(
-        `SELECT COUNT(*) AS n FROM events e JOIN tasks t ON t.event_id = e.id
-         WHERE e.task_id = t.id AND e.deleted = 0 AND t.status = 'todo' AND e.end_ms < ? AND e.end_ms > ?`,
+        `SELECT COUNT(*) AS n FROM events e JOIN tasks t ON t.id = e.task_id
+         WHERE e.deleted = 0 AND t.status = 'todo' AND e.end_ms < ? AND e.end_ms > ?`,
         [Date.now(), Date.now() - 7 * 864e5],
       ),
     ]);
@@ -27,12 +28,13 @@ export const GET = route(async (req) => {
   }
 
   await syncNow().catch(() => {});
-  const [tasks, events, slots, suggestions, plan] = await Promise.all([
+  const [tasks, events, slots, suggestions, plan, settings] = await Promise.all([
     listTasks(),
     listEvents(dayStart.getTime(), addDays(dayStart, 1).getTime()),
     freeSlots(Date.now(), 1),
     suggestTasks(20),
     get<{ planned_at: string | null }>("SELECT planned_at FROM daily_plans WHERE date = ?", [today]),
+    getSettings(),
   ]);
   const todo = tasks.filter((t) => t.status === "todo" && !t.parent_id);
   // Dünden kalanlar: geçmişe ayrılmış ya da tarihi geçmiş ama yapılmamış işler
@@ -51,6 +53,9 @@ export const GET = route(async (req) => {
     events: events.filter((e) => !e.task_id),
     taskBlocks: events.filter((e) => e.task_id),
     freeMinutes: Math.round(slots.reduce((a, s) => a + (s.end - s.start), 0) / 60_000),
+    // Günlük sınır: bugüne zaten konmuş görev blokları + kalan kapasite
+    dailyMax: settings.dailyMaxMinutes,
+    taskMinutesToday: Math.round(events.filter((e) => e.task_id && !e.all_day).reduce((a, e) => a + (e.end_ms - e.start_ms), 0) / 60_000),
     suggestions,
     today: todo.filter((t) => t.planned_date === today || t.top_date === today),
   });
@@ -82,17 +87,24 @@ export const POST = route(async (req) => {
   const dayStart = new Date(`${today}T00:00:00`).getTime();
   const dayEnd = addDays(new Date(`${today}T00:00:00`), 1).getTime();
   if (ids.length) {
-    const elsewhere = await all<{ id: string }>(
-      `SELECT e.id FROM events e JOIN tasks t ON t.event_id = e.id
-       WHERE e.deleted = 0 AND e.start_ms >= ? AND t.id IN (${ids.map(() => "?").join(",")})`,
-      [dayEnd, ...ids],
+    const blocks = await all<{ id: string; task_id: string; start_ms: number; chunk_min: number | null }>(
+      `SELECT e.id, e.task_id, e.start_ms, t.chunk_min FROM events e JOIN tasks t ON t.id = e.task_id
+       WHERE e.deleted = 0 AND e.start_ms >= ? AND t.id IN (${ids.map(() => "?").join(",")}) ORDER BY e.start_ms`,
+      [dayStart, ...ids],
     );
-    for (const e of elsewhere) await deleteEvent(e.id).catch(() => {});
+    for (const id of ids) {
+      const mine = blocks.filter((x) => x.task_id === id);
+      if (mine.some((x) => x.start_ms < dayEnd)) continue; // bugün zaten bloğu var
+      const later = mine.filter((x) => x.start_ms >= dayEnd);
+      // Parçalı işte yalnızca en yakın parça bugüne çekilir; tek parçalı işin bloğu bugüne taşınır.
+      const move = mine[0]?.chunk_min ? later.slice(0, 1) : later;
+      for (const x of move) await deleteEvent(x.id).catch(() => {});
+    }
   }
   // Zaten bugün zaman bloğu olan işler yeniden planlanmaz; olmayanlar bugünün boşluklarına yerleşir.
   const result = ids.length ? await autoPlan({ taskIds: ids, days: 1 }) : { planned: [], unplanned: [] };
   const scheduledToday = await all<{ id: string }>(
-    `SELECT t.id FROM tasks t JOIN events e ON e.id = t.event_id
+    `SELECT DISTINCT t.id FROM tasks t JOIN events e ON e.task_id = t.id
      WHERE e.deleted = 0 AND e.start_ms >= ? AND e.start_ms < ?`,
     [dayStart, dayEnd],
   );
