@@ -4,6 +4,7 @@ import { Bell, Download, ExternalLink, Layers, Link2, LogOut, Plus, RefreshCw, T
 import { useEffect, useState } from "react";
 import { emitChanged, toast } from "@/components/toast";
 import { api, useApi, WEEKDAYS_SHORT } from "@/lib/client";
+import PushCard from "@/components/PushCard";
 import type { CalendarRow } from "@/lib/types";
 
 type GoogleStatus = {
@@ -19,6 +20,7 @@ type GoogleStatus = {
 };
 
 type Settings = {
+  notify: import("@/lib/settings").Settings["notify"];
   workStart: string;
   workEnd: string;
   workDays: string;
@@ -61,14 +63,12 @@ export default function SettingsPage() {
   const [calBusy, setCalBusy] = useState<string | null>(null);
   const [form, setForm] = useState<Settings | null>(null);
   const [busy, setBusy] = useState(false);
-  const [perm, setPerm] = useState<string>("default");
 
   useEffect(() => {
     if (settings.data) setForm(settings.data);
   }, [settings.data]);
 
   useEffect(() => {
-    if ("Notification" in window) setPerm(Notification.permission);
     const q = new URLSearchParams(window.location.search).get("google");
     if (q && GOOGLE_MESSAGES[q]) {
       toast(...GOOGLE_MESSAGES[q]);
@@ -109,13 +109,6 @@ export default function SettingsPage() {
     } catch (e) {
       toast((e as Error).message, "error");
     }
-  };
-
-  const askNotify = async () => {
-    if (!("Notification" in window)) return toast("Tarayıcınız bildirimleri desteklemiyor", "error");
-    const p = await Notification.requestPermission();
-    setPerm(p);
-    if (p === "granted") new Notification("Bildirimler açık", { body: "Etkinliklerden önce hatırlatacağım." });
   };
 
   const toggleCalendar = async (c: CalendarRow) => {
@@ -379,13 +372,9 @@ export default function SettingsPage() {
                 <input className="input" value={form.timeZone} readOnly disabled title="APP_TIMEZONE ortam değişkeniyle ayarlanır" />
               </Field>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <button className="btn-ghost" onClick={askNotify} disabled={perm === "granted"}>
-                <Bell size={16} /> {perm === "granted" ? "Tarayıcı bildirimleri açık" : "Tarayıcı bildirimlerine izin ver"}
-              </button>
-              {perm === "denied" && <span className="text-xs text-red-600">Bildirimler tarayıcı ayarlarından engellenmiş.</span>}
-            </div>
           </section>
+
+          <PushCard notify={form.notify} onChange={(notify) => set({ notify })} />
 
           {/* Pomodoro */}
           <section className="card space-y-4">

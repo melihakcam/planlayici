@@ -160,9 +160,8 @@ function Shell({ children }: { children: React.ReactNode }) {
             notified.current.add(key);
             const mins = Math.max(0, Math.round((e.start_ms - now) / 60_000));
             const msg = `${mins} dakika sonra başlıyor${e.location ? ` · ${e.location}` : ""}`;
-            if ("Notification" in window && Notification.permission === "granted") {
-              new Notification(e.title, { body: msg });
-            } else toast(`Hatırlatma: ${e.title} — ${msg}`);
+            // Telefon bildirimi sunucudan ayrıca gelir; uygulama açıkken yalnızca ekranda göster
+            toast(`Hatırlatma: ${e.title} — ${msg}`);
           }
         }
       } catch {}

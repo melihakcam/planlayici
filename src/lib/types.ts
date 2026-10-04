@@ -116,6 +116,10 @@ export type Habit = {
   days: string;
   target: number;
   archived: number;
+  /** Gün içinde kaç dakikada bir hatırlatılsın (boş = hatırlatma yok) */
+  remind_every: number | null;
+  remind_start: string;
+  remind_end: string;
   created_at: string;
   logs: Record<string, number>;
   streak: number;

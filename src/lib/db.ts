@@ -13,7 +13,7 @@ process.env.TZ = process.env.APP_TIMEZONE || "Europe/Istanbul";
  */
 export const OWNER = "owner";
 
-const SCHEMA_VERSION = 7;
+const SCHEMA_VERSION = 8;
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL);
@@ -124,6 +124,23 @@ CREATE TABLE IF NOT EXISTS journal (
 
 /** Gelecekteki şema değişiklikleri buraya sürüm sırasıyla eklenir. */
 const MIGRATIONS: Record<number, string> = {
+  // Telefon bildirimleri (Web Push): abonelikler, gönderim kaydı, alışkanlık hatırlatma aralığı
+  8: `
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      endpoint TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL DEFAULT 'owner',
+      p256dh TEXT NOT NULL,
+      auth TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS push_log (
+      key TEXT PRIMARY KEY,
+      sent_at TEXT NOT NULL
+    );
+    ALTER TABLE habits ADD COLUMN IF NOT EXISTS remind_every INTEGER;
+    ALTER TABLE habits ADD COLUMN IF NOT EXISTS remind_start TEXT NOT NULL DEFAULT '09:00';
+    ALTER TABLE habits ADD COLUMN IF NOT EXISTS remind_end TEXT NOT NULL DEFAULT '23:00';
+  `,
   // Haftalık proje seçimi: bu hafta hangi projeye kaç oturum (45 dk) çalışılacak
   7: `
     CREATE TABLE IF NOT EXISTS week_projects (

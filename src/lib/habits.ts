@@ -39,11 +39,22 @@ export async function listHabits(includeArchived = false): Promise<Habit[]> {
   });
 }
 
+const HHMM = /^\d{2}:\d{2}$/;
+/** Hatırlatma alanlarını doğrular: en az 15 dakikada bir, saat aralığı HH:MM */
+function reminder(h: Partial<HabitRow>) {
+  const every = Number(h.remind_every);
+  return {
+    remind_every: every > 0 ? Math.max(15, Math.round(every)) : null,
+    remind_start: h.remind_start && HHMM.test(h.remind_start) ? h.remind_start : "09:00",
+    remind_end: h.remind_end && HHMM.test(h.remind_end) ? h.remind_end : "23:00",
+  };
+}
+
 export async function createHabit(input: Partial<HabitRow>) {
   const id = uid();
   await run(
-    `INSERT INTO habits (id, name, icon, color, days, target, created_at)
-     VALUES (@id, @name, @icon, @color, @days, @target, @created_at)`,
+    `INSERT INTO habits (id, name, icon, color, days, target, remind_every, remind_start, remind_end, created_at)
+     VALUES (@id, @name, @icon, @color, @days, @target, @remind_every, @remind_start, @remind_end, @created_at)`,
     {
       id,
       name: input.name?.trim() || "Yeni alışkanlık",
@@ -51,6 +62,7 @@ export async function createHabit(input: Partial<HabitRow>) {
       color: input.color || "#6366f1",
       days: input.days || "0123456",
       target: Math.max(1, Number(input.target) || 1),
+      ...reminder(input),
       created_at: nowIso(),
     },
   );
@@ -62,7 +74,7 @@ export async function updateHabit(id: string, input: Partial<HabitRow>) {
   if (!cur) throw new Error("Alışkanlık bulunamadı");
   const n = { ...cur, ...input };
   await run(
-    "UPDATE habits SET name=@name, icon=@icon, color=@color, days=@days, target=@target, archived=@archived WHERE id=@id",
+    "UPDATE habits SET name=@name, icon=@icon, color=@color, days=@days, target=@target, archived=@archived, remind_every=@remind_every, remind_start=@remind_start, remind_end=@remind_end WHERE id=@id",
     {
       name: n.name,
       icon: n.icon,
@@ -70,6 +82,7 @@ export async function updateHabit(id: string, input: Partial<HabitRow>) {
       days: n.days,
       target: Math.max(1, Number(n.target) || 1),
       archived: n.archived ? 1 : 0,
+      ...reminder(n),
       id,
     },
   );

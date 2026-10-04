@@ -30,6 +30,19 @@ export type Settings = {
   semesterStart: string | null;
   semesterEnd: string | null;
   examWeeks: { name: string; start: string; end: string; skipClasses: boolean }[];
+  /** Telefon bildirimleri */
+  notify: {
+    /** Çalışma oturumu başlarken */
+    sessions: boolean;
+    /** Ders ve kurstan kaç dakika önce (0 = kapalı) */
+    classesMin: number;
+    /** Diğer takvim etkinliklerinden kaç dakika önce (0 = kapalı) */
+    eventsMin: number;
+    /** Son tarihler: önceki akşam 20:00 ve o gün 09:00 */
+    deadlines: boolean;
+    /** "Yarını planla" hatırlatma saati ("" = kapalı) */
+    planTime: string;
+  };
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -53,6 +66,7 @@ export const DEFAULT_SETTINGS: Settings = {
   semesterStart: null,
   semesterEnd: null,
   examWeeks: [],
+  notify: { sessions: true, classesMin: 10, eventsMin: 10, deadlines: true, planTime: "22:15" },
 };
 
 /** Bir günün planlama penceresi; o gün planlanmayacaksa null. */

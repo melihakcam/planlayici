@@ -177,7 +177,7 @@ function HabitEditor({ habit, onClose, onSaved }: { habit: Partial<Habit> | null
 
   const save = async () => {
     if (!f.name?.trim()) return toast("İsim girin", "error");
-    const body = { name: f.name, icon: f.icon, color: f.color, days, target: f.target };
+    const body = { name: f.name, icon: f.icon, color: f.color, days, target: f.target, remind_every: f.remind_every || null, remind_start: f.remind_start, remind_end: f.remind_end };
     if (habit.id) await api(`/api/habits/${habit.id}`, { method: "PATCH", body });
     else await api("/api/habits", { body });
     onSaved();
@@ -259,6 +259,28 @@ function HabitEditor({ habit, onClose, onSaved }: { habit: Partial<Habit> | null
             value={f.target ?? 1}
             onChange={(e) => set({ target: Number(e.target.value) })}
           />
+        </div>
+        <div className="surface-2 space-y-2 rounded-xl p-3">
+          <label className="flex min-h-11 items-center justify-between gap-3">
+            <span className="text-sm font-medium">Telefona hatırlatma gönder</span>
+            <input
+              type="checkbox"
+              className="h-5 w-5 accent-violet-600"
+              checked={Boolean(f.remind_every)}
+              onChange={(e) => set({ remind_every: e.target.checked ? 30 : null })}
+            />
+          </label>
+          {Boolean(f.remind_every) && (
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <input type="number" min={15} step={5} className="input w-20" value={f.remind_every ?? 30} onChange={(e) => set({ remind_every: Number(e.target.value) })} aria-label="Kaç dakikada bir" />
+              <span>dakikada bir,</span>
+              <input type="time" className="input w-28" value={f.remind_start ?? "09:00"} onChange={(e) => set({ remind_start: e.target.value })} aria-label="Başlangıç saati" />
+              <span>–</span>
+              <input type="time" className="input w-28" value={f.remind_end ?? "23:00"} onChange={(e) => set({ remind_end: e.target.value })} aria-label="Bitiş saati" />
+              <span>arası</span>
+              <p className="muted w-full text-xs">Günlük hedefe ulaşınca o gün hatırlatma durur. Örneğin su için hedefi 6 bardak yapıp her içtiğinde işaretleyebilirsin.</p>
+            </div>
+          )}
         </div>
         <div className="flex flex-wrap justify-between gap-2 pt-2">
           <div className="flex gap-1">
