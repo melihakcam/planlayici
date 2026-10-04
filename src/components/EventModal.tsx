@@ -2,7 +2,7 @@
 
 import { MapPin, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { addDays, api, parseYmd, toLocalInput, useApi, ymd } from "@/lib/client";
+import { addDays, api, parseYmd, toLocalInput, useApi, WEEKDAYS_SHORT, ymd } from "@/lib/client";
 import { GOOGLE_COLORS, type CalendarRow, type EventRow } from "@/lib/types";
 import Modal from "./Modal";
 import { toast } from "./toast";
@@ -43,6 +43,9 @@ export default function EventModal({
   const [reminder, setReminder] = useState("");
   const [repeat, setRepeat] = useState("");
   const [repeatCount, setRepeatCount] = useState("");
+  const [repeatDays, setRepeatDays] = useState<number[]>([]);
+  const [repeatUntil, setRepeatUntil] = useState("");
+  const [endMode, setEndMode] = useState<"never" | "count" | "until">("never");
   const [busy, setBusy] = useState(false);
   const [calendarId, setCalendarId] = useState("primary");
   const calendars = useApi<CalendarRow[]>(open ? "/api/calendars" : null);
@@ -82,6 +85,9 @@ export default function EventModal({
     }
     setRepeat("");
     setRepeatCount("");
+    setRepeatDays([]);
+    setRepeatUntil("");
+    setEndMode("never");
   }, [open, event, draft]);
 
   const switchAllDay = (v: boolean) => {
@@ -110,7 +116,14 @@ export default function EventModal({
         colorId,
         reminderMin: reminder === "" ? null : Number(reminder),
         ...(calendarList.length ? { calendarId } : {}),
-        ...(event ? {} : { repeat: repeat || null, repeatCount: repeatCount ? Number(repeatCount) : null }),
+        ...(event
+          ? {}
+          : {
+              repeat: repeat || null,
+              repeatCount: endMode === "count" && repeatCount ? Number(repeatCount) : null,
+              repeatUntil: endMode === "until" && repeatUntil ? repeatUntil : null,
+              repeatDays: repeat === "weekly" && repeatDays.length ? repeatDays : null,
+            }),
       };
       if (event) await api(`/api/events/${event.id}`, { method: "PATCH", body: payload });
       else await api("/api/events", { body: payload });
@@ -238,20 +251,54 @@ export default function EventModal({
                   <option value="yearly">Her yıl</option>
                 </select>
                 {repeat && (
-                  <input
-                    type="number"
-                    min={1}
-                    className="input w-24"
-                    placeholder="Kez"
-                    title="Kaç kez tekrarlansın (boş = süresiz)"
-                    value={repeatCount}
-                    onChange={(e) => setRepeatCount(e.target.value)}
-                  />
+                  <select className="input w-40" value={endMode} onChange={(e) => setEndMode(e.target.value as typeof endMode)} aria-label="Tekrar ne zaman bitsin">
+                    <option value="never">Süresiz</option>
+                    <option value="count">Kaç kez</option>
+                    <option value="until">Tarihe kadar</option>
+                  </select>
                 )}
               </div>
             </div>
           )}
         </div>
+        {!event && repeat && (
+          <div className="surface-2 space-y-3 rounded-xl p-3">
+            {repeat === "weekly" && (
+              <div>
+                <span className="label">Hangi günler?</span>
+                <div className="flex gap-1" role="group" aria-label="Tekrar günleri">
+                  {[1, 2, 3, 4, 5, 6, 0].map((d) => {
+                    const on = repeatDays.includes(d);
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => setRepeatDays(on ? repeatDays.filter((x) => x !== d) : [...repeatDays, d])}
+                        className={`min-h-10 flex-1 rounded-lg text-xs font-semibold transition ${on ? "bg-brand-600 text-white" : "panel border border-theme"}`}
+                      >
+                        {WEEKDAYS_SHORT[d]}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="muted mt-1 text-xs">Seçmezsen başlangıç günü kullanılır. Ör. kurs için Pzt–Per'i seç.</p>
+              </div>
+            )}
+            {endMode === "count" && (
+              <label className="block">
+                <span className="label">Kaç kez tekrarlansın?</span>
+                <input type="number" min={1} max={366} className="input w-32" value={repeatCount} onChange={(e) => setRepeatCount(e.target.value)} />
+              </label>
+            )}
+            {endMode === "until" && (
+              <label className="block">
+                <span className="label">Son tekrar tarihi (dahil)</span>
+                <input type="date" className="input w-48" value={repeatUntil} min={start.slice(0, 10)} onChange={(e) => setRepeatUntil(e.target.value)} />
+              </label>
+            )}
+          </div>
+        )}
         {calendarList.length > 0 && (
           <div>
             <span className="label">Takvim</span>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Download, ExternalLink, Link2, LogOut, RefreshCw } from "lucide-react";
+import { Bell, Download, ExternalLink, Layers, Link2, LogOut, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { emitChanged, toast } from "@/components/toast";
 import { api, useApi, WEEKDAYS_SHORT } from "@/lib/client";
@@ -244,7 +244,7 @@ export default function SettingsPage() {
                   <p className="muted text-xs">İşaretli takvimler senkronize edilir ve akıllı planlamada dolu saat sayılır.</p>
                 </div>
                 <ul className="space-y-1">
-                  {calendars.data!.map((c) => (
+                  {calendars.data!.filter((c) => !c.id.startsWith("local:")).map((c) => (
                     <li key={c.id}>
                       <label className="flex cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-black/5 dark:hover:bg-white/5">
                         <input
@@ -286,6 +286,8 @@ export default function SettingsPage() {
           </div>
         )}
       </section>
+
+      <LocalCalendars calendars={calendars.data ?? []} onChange={(list) => { calendars.setData(list); emitChanged(); }} />
 
       {form && (
         <>
@@ -412,6 +414,79 @@ export default function SettingsPage() {
         </>
       )}
     </div>
+  );
+}
+
+const CAL_COLORS = ["#7c3aed", "#3f51b5", "#0b8043", "#039be5", "#e67c73", "#f4511e", "#f6bf26", "#616161"];
+
+/** Yalnızca planlayıcıda duran takvimler: Google'a hiç gönderilmez. */
+function LocalCalendars({ calendars, onChange }: { calendars: CalendarRow[]; onChange: (list: CalendarRow[]) => void }) {
+  const local = calendars.filter((c) => c.id.startsWith("local:"));
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const call = async (url: string, method: string, body?: unknown) => {
+    setBusy(true);
+    try {
+      onChange(await api<CalendarRow[]>(url, { method, body }));
+    } catch (e) {
+      toast((e as Error).message, "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const add = async () => {
+    if (!name.trim()) return;
+    await call("/api/calendars", "POST", { summary: name, color: CAL_COLORS[local.length % CAL_COLORS.length] });
+    setName("");
+  };
+  return (
+    <section className="card space-y-4">
+      <div className="flex items-center gap-3">
+        <span className="grid h-10 w-10 place-items-center rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300">
+          <Layers size={20} />
+        </span>
+        <div>
+          <h2 className="font-semibold">Planlayıcı takvimleri</h2>
+          <p className="muted text-xs">Sadece bu uygulamada durur; Google'a hiç gönderilmez. Ders programı, kurslar ve kişisel planın için.</p>
+        </div>
+      </div>
+      <ul className="space-y-2">
+        {local.map((c) => (
+          <li key={c.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-theme p-2">
+            <label className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg" title="Rengi değiştir">
+              <span className="absolute inset-0" style={{ background: c.color }} />
+              <input
+                type="color"
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                value={c.color}
+                onChange={(e) => call(`/api/calendars/${encodeURIComponent(c.id)}`, "PATCH", { color: e.target.value })}
+                aria-label={`${c.summary} rengi`}
+              />
+            </label>
+            <input
+              className="input min-w-0 flex-1"
+              defaultValue={c.summary}
+              aria-label="Takvim adı"
+              onBlur={(e) => e.target.value.trim() && e.target.value !== c.summary && call(`/api/calendars/${encodeURIComponent(c.id)}`, "PATCH", { summary: e.target.value })}
+            />
+            <button
+              className="btn-danger h-10 w-10 p-0"
+              disabled={busy}
+              aria-label={`${c.summary} takvimini sil`}
+              onClick={() => confirm(`"${c.summary}" takvimi ve içindeki tüm etkinlikler silinsin mi?`) && call(`/api/calendars/${encodeURIComponent(c.id)}`, "DELETE")}
+            >
+              <Trash2 size={16} />
+            </button>
+          </li>
+        ))}
+      </ul>
+      <div className="flex gap-2">
+        <input className="input" placeholder="Yeni takvim adı (ör. Spor, Kulüp)" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} />
+        <button className="btn-primary shrink-0" onClick={add} disabled={busy || !name.trim()}>
+          <Plus size={16} /> Ekle
+        </button>
+      </div>
+    </section>
   );
 }
 

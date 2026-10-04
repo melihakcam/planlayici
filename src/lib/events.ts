@@ -19,6 +19,10 @@ export type EventInput = {
   repeat?: string | null;
   /** Tekrar sayısı; boşsa süresiz */
   repeatCount?: number | null;
+  /** Haftalık tekrarda günler (0 = Pazar); ör. [1,2,3,4] = Pzt–Per */
+  repeatDays?: number[] | null;
+  /** Bu tarihe kadar (dahil) tekrarla — YYYY-MM-DD */
+  repeatUntil?: string | null;
 };
 
 const getRow = (id: string) => get<EventRow>("SELECT * FROM events WHERE id = ?", [id]);
@@ -87,13 +91,47 @@ async function assertWritable(calendarId: string) {
 const FREQ: Record<string, string> = { daily: "DAILY", weekly: "WEEKLY", monthly: "MONTHLY", yearly: "YEARLY" };
 const LOCAL_REPEAT_CAP: Record<string, number> = { daily: 90, weekly: 52, monthly: 24, yearly: 10 };
 
-function shift(start: string, allDay: boolean, freq: string, i: number) {
-  const d = allDay ? parseYmd(start) : new Date(start);
-  if (freq === "daily") d.setDate(d.getDate() + i);
-  if (freq === "weekly") d.setDate(d.getDate() + 7 * i);
-  if (freq === "monthly") d.setMonth(d.getMonth() + i);
-  if (freq === "yearly") d.setFullYear(d.getFullYear() + i);
-  return allDay ? ymd(d) : d.toISOString();
+const BYDAY = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+
+type RepeatRule = { freq: string; count: number | null; until: Date | null; days: number[] | null };
+
+/** Tekrar kuralının yerel örneklerinin başlangıçları (çevrimdışı ya da yerel takvim için). */
+function occurrences(start: string, allDay: boolean, r: RepeatRule): string[] {
+  const first = allDay ? parseYmd(start) : new Date(start);
+  const cap = r.count ?? (r.until ? 1000 : LOCAL_REPEAT_CAP[r.freq]);
+  const out: string[] = [];
+  const fmt = (d: Date) => (allDay ? ymd(d) : d.toISOString());
+  if (r.freq === "weekly" && r.days?.length) {
+    // Seçili günler: başlangıçtan itibaren gün gün ilerle (en fazla ~2 yıl)
+    for (let i = 0; i < 800 && out.length < cap; i++) {
+      const d = new Date(first);
+      d.setDate(d.getDate() + i);
+      if (r.until && d > r.until) break;
+      if (r.days.includes(d.getDay())) out.push(fmt(d));
+    }
+    return out;
+  }
+  for (let i = 0; out.length < cap && i < 1000; i++) {
+    const d = new Date(first);
+    if (r.freq === "daily") d.setDate(d.getDate() + i);
+    if (r.freq === "weekly") d.setDate(d.getDate() + 7 * i);
+    if (r.freq === "monthly") d.setMonth(d.getMonth() + i);
+    if (r.freq === "yearly") d.setFullYear(d.getFullYear() + i);
+    if (r.until && d > r.until) break;
+    out.push(fmt(d));
+  }
+  return out;
+}
+
+/** Google için RRULE metni */
+function rrule(r: RepeatRule, allDay: boolean) {
+  let rule = `RRULE:FREQ=${FREQ[r.freq]}`;
+  if (r.freq === "weekly" && r.days?.length) rule += `;BYDAY=${r.days.map((d) => BYDAY[d]).join(",")}`;
+  if (r.until) {
+    const u = r.until.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+    rule += `;UNTIL=${allDay ? ymd(r.until).replace(/-/g, "") : u}`;
+  } else if (r.count) rule += `;COUNT=${r.count}`;
+  return rule;
 }
 
 export async function createEvent(input: EventInput): Promise<EventRow> {
@@ -121,11 +159,30 @@ export async function createEvent(input: EventInput): Promise<EventRow> {
   const repeat = input.repeat && FREQ[input.repeat] ? input.repeat : null;
   // Yerel takvimdeki tekrarlar Google'a gitmez; yerelde tek tek oluşturulur.
   const connected = Boolean(await getAccount()) && !isLocalCalendar(calendarId);
+  const days = repeat === "weekly" && input.repeatDays?.length ? [...new Set(input.repeatDays.map(Number))].filter((d) => d >= 0 && d <= 6).sort() : null;
+  const untilDay = input.repeatUntil && /^\d{4}-\d{2}-\d{2}$/.test(input.repeatUntil) ? parseYmd(input.repeatUntil) : null;
+  if (untilDay) untilDay.setHours(23, 59, 59, 0);
+  const rule: RepeatRule | null = repeat
+    ? { freq: repeat, count: input.repeatCount ? Math.min(366, Number(input.repeatCount)) : null, until: untilDay, days }
+    : null;
 
-  if (repeat && connected) {
+  // Seçili günlerle tekrar: ilk örnek seçili günlerden birine denk gelmeli (Google ve RFC 5545 için).
+  if (rule?.days) {
+    const firstStart = occurrences(t.start, allDay, { ...rule, count: 1 })[0];
+    if (firstStart && firstStart !== t.start) {
+      const dur = t.end_ms - t.start_ms;
+      Object.assign(
+        t,
+        allDay
+          ? normalizeTimes(firstStart, ymd(new Date(parseYmd(firstStart).getTime() + dur)), true)
+          : normalizeTimes(firstStart, new Date(new Date(firstStart).getTime() + dur).toISOString(), false),
+      );
+    }
+  }
+
+  if (rule && connected) {
     // Google tekrar kuralını yönetir; örnekler senkronla geri gelir.
-    const rule = `RRULE:FREQ=${FREQ[repeat]}${input.repeatCount ? `;COUNT=${input.repeatCount}` : ""}`;
-    const s = insertStmt({ id, ...base, ...t, recurrence: rule, series_id: null });
+    const s = insertStmt({ id, ...base, ...t, recurrence: rrule(rule, allDay), series_id: null });
     await run(s.sql, s.args);
     await pushEvent(id);
     const gid = (await getRow(id))?.google_id;
@@ -138,14 +195,14 @@ export async function createEvent(input: EventInput): Promise<EventRow> {
     );
   }
 
-  if (repeat) {
-    // Çevrimdışı: tekrarları tek tek yerel etkinlik olarak oluştur.
-    const count = Math.min(input.repeatCount || LOCAL_REPEAT_CAP[repeat], 366);
+  if (rule) {
+    // Çevrimdışı ya da yerel takvim: tekrarları tek tek etkinlik olarak oluştur.
     const seriesId = uid();
     const dur = t.end_ms - t.start_ms;
     const stmts = [];
-    for (let i = 0; i < count; i++) {
-      const s = shift(t.start, allDay, repeat, i);
+    const starts = occurrences(t.start, allDay, rule);
+    for (let i = 0; i < starts.length; i++) {
+      const s = starts[i];
       const n = allDay
         ? normalizeTimes(s, ymd(new Date(parseYmd(s).getTime() + dur)), true)
         : normalizeTimes(s, new Date(new Date(s).getTime() + dur).toISOString(), false);

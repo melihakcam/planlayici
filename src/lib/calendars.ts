@@ -85,3 +85,36 @@ export async function setCalendarSelected(id: string, selected: boolean) {
     ...(selected ? [] : calendarStmts(id)),
   ]);
 }
+
+/** Yalnızca uygulamada duran yeni bir takvim oluşturur. */
+export async function createLocalCalendar(summary: string, color: string) {
+  const id = `local:${crypto.randomUUID().slice(0, 8)}`;
+  await batch([
+    {
+      sql: "INSERT INTO calendars (id, summary, color, access_role, is_primary, selected) VALUES (?, ?, ?, 'local', 0, 1)",
+      args: [id, summary.trim() || "Yeni takvim", color || "#6366f1"],
+    },
+  ]);
+  return id;
+}
+
+/** Yerel takvimin adını/rengini değiştirir. Google takvimlerinin adı Google'dan gelir. */
+export async function updateLocalCalendar(id: string, input: { summary?: string; color?: string }) {
+  if (!isLocalCalendar(id)) throw new Error("Google takvimlerinin adı ve rengi Google Takvim'den değiştirilir");
+  await batch([
+    {
+      sql: "UPDATE calendars SET summary = COALESCE(?, summary), color = COALESCE(?, color) WHERE id = ?",
+      args: [input.summary?.trim() || null, input.color || null, id],
+    },
+  ]);
+}
+
+/** Yerel takvimi ve tüm etkinliklerini siler. */
+export async function deleteLocalCalendar(id: string) {
+  if (!isLocalCalendar(id)) throw new Error("Google takvimleri buradan silinemez; senkrondan çıkarabilirsin");
+  await batch([
+    { sql: "UPDATE tasks SET event_id = NULL WHERE event_id IN (SELECT id FROM events WHERE calendar_id = ?)", args: [id] },
+    { sql: "DELETE FROM events WHERE calendar_id = ?", args: [id] },
+    { sql: "DELETE FROM calendars WHERE id = ?", args: [id] },
+  ]);
+}
