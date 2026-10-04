@@ -35,6 +35,7 @@ export default function ProjectsPage() {
   const list = (projects.data ?? []).filter((p) => p.status !== "fikir" && (showArchived || p.status !== "done"));
   const ideas = (projects.data ?? []).filter((p) => p.status === "fikir");
   const [idea, setIdea] = useState("");
+  const [ideasOpen, setIdeasOpen] = useState(false);
 
   const addIdea = async () => {
     if (!idea.trim()) return;
@@ -64,11 +65,14 @@ export default function ProjectsPage() {
           <h1 className="text-2xl font-bold tracking-tight">Projeler</h1>
           <p className="muted text-sm">Her projeye haftalık bir saat hedefi ver; planlama dengeyi buna göre kurar.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <label className="muted flex items-center gap-2 text-sm">
             <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
             Bitenleri göster
           </label>
+          <button className="btn-ghost" onClick={() => setIdeasOpen(true)}>
+            <Lightbulb size={16} className="text-amber-500" /> Fikirler{ideas.length ? ` (${ideas.length})` : ""}
+          </button>
           <button className="btn-primary" onClick={() => setEditing({ area: "kisisel", color: COLORS[(projects.data?.length ?? 0) % COLORS.length], status: "active", weekly_hours: 0 })}>
             <Plus size={16} /> Yeni proje
           </button>
@@ -90,7 +94,7 @@ export default function ProjectsPage() {
       {projects.data && list.length === 0 && (
         <div className="card py-12 text-center">
           <FolderKanban className="muted mx-auto mb-2" />
-          <p className="muted text-sm">Henüz proje yok. "Yeni proje" ile ekle ya da aşağıdaki fikirlerden birini projeye dönüştür.</p>
+          <p className="muted text-sm">Henüz proje yok. "Yeni proje" ile ekle ya da Fikirler'den birini projeye dönüştür.</p>
         </div>
       )}
 
@@ -133,14 +137,11 @@ export default function ProjectsPage() {
             </div>
       )}
 
+
       {/* Fikirler: aklına gelen, belki ileride proje olacak şeyler (planlamaya girmez) */}
-      <section className="card gradient-border space-y-3">
-        <div>
-          <h2 className="flex items-center gap-2 text-lg font-bold">
-            <Lightbulb size={20} className="text-amber-500" /> Fikirler
-          </h2>
-          <p className="muted text-sm">Aklına gelen proje fikirlerini buraya yaz. Başlamaya karar verince projeye dönüştür.</p>
-        </div>
+      <Modal open={ideasOpen} onClose={() => setIdeasOpen(false)} title="Fikirler">
+      <div className="space-y-3">
+        <p className="muted text-sm">Aklına gelen proje fikirlerini yaz. Başlamaya karar verince projeye dönüştür; o zamana kadar planlamaya girmez.</p>
         <form
           className="flex gap-2"
           onSubmit={(e) => {
@@ -148,7 +149,7 @@ export default function ProjectsPage() {
             addIdea();
           }}
         >
-          <input className="input" placeholder="Yeni fikir… (ör. tarla nem sensörüyle sulama uyarısı)" value={idea} onChange={(e) => setIdea(e.target.value)} aria-label="Yeni fikir" />
+          <input autoFocus className="input" placeholder="Yeni fikir… (ör. tarla nem sensörüyle sulama uyarısı)" value={idea} onChange={(e) => setIdea(e.target.value)} aria-label="Yeni fikir" />
           <button className="btn-primary shrink-0" disabled={!idea.trim()}>
             <Plus size={16} /> Ekle
           </button>
@@ -157,7 +158,7 @@ export default function ProjectsPage() {
         <ul className="divide-y divide-[var(--border)]">
           {ideas.map((p) => (
             <li key={p.id} className="flex items-start gap-2 py-2">
-              <button className="min-w-0 flex-1 rounded-lg py-1 text-left" onClick={() => setEditing(p)}>
+              <button className="min-w-0 flex-1 rounded-lg py-1 text-left" onClick={() => (setIdeasOpen(false), setEditing(p))}>
                 <p className="font-medium">{p.name}</p>
                 {p.notes && <p className="muted line-clamp-2 text-xs">{p.notes}</p>}
               </button>
@@ -170,7 +171,8 @@ export default function ProjectsPage() {
             </li>
           ))}
         </ul>
-      </section>
+      </div>
+      </Modal>
 
       <ProjectEditor
         project={editing}
