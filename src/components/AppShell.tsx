@@ -229,7 +229,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           active ? "bg-[var(--primary-soft)] text-brand-700 dark:text-brand-200" : "muted hover:bg-black/[0.04] hover:text-[var(--text)] dark:hover:bg-white/[0.05]"
         }`}
       >
-        {active && <span className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-brand-600" aria-hidden />}
+        {active && <span className="hero-gradient absolute inset-y-2 left-0 w-1 rounded-r-full" aria-hidden />}
         <Icon size={18} strokeWidth={active ? 2.25 : 2} />
         {label}
       </Link>
@@ -237,15 +237,21 @@ function Shell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="flex min-h-dvh">
+    <div className="vivid flex min-h-dvh">
+      {/* Arka planda yavaşça süzülen renk ışıkları (tüm sayfalar) */}
+      <div className="vivid-bg" aria-hidden>
+        <span />
+        <span />
+        <span />
+      </div>
       <a href="#icerik" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-xl focus:bg-brand-600 focus:px-4 focus:py-2 focus:text-white">
         İçeriğe geç
       </a>
 
       {/* Masaüstü kenar çubuğu */}
-      <aside className="panel sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r px-3 py-5 md:flex">
+      <aside className="glass sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r px-3 py-5 md:flex">
         <Link href="/" className="mb-5 flex items-center gap-2.5 px-2">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-white shadow-sm shadow-brand-600/30">
+          <span className="hero-gradient grid h-9 w-9 place-items-center rounded-xl text-white shadow-md shadow-violet-600/30">
             <CalendarCheck2 size={19} />
           </span>
           <span className="text-lg font-extrabold tracking-tight">Planlayıcı</span>
@@ -272,7 +278,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         {/* Mobil üst çubuk */}
         <div className="mb-4 flex items-center justify-between md:hidden">
           <Link href="/" className="flex items-center gap-2">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-white">
+            <span className="hero-gradient grid h-8 w-8 place-items-center rounded-lg text-white">
               <CalendarCheck2 size={17} />
             </span>
             <span className="text-lg font-extrabold tracking-tight">Planlayıcı</span>
@@ -288,13 +294,13 @@ function Shell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </div>
-        {children}
+        <div key={path} className="page-enter">{children}</div>
       </main>
 
       {/* Mobil alt menü: 4 ana sayfa + "Daha" */}
       {moreOpen && (
         <div className="fixed inset-0 z-30 bg-black/40 md:hidden" onClick={() => setMoreOpen(false)}>
-          <div className="panel animate-rise absolute inset-x-3 bottom-[calc(5rem+env(safe-area-inset-bottom))] grid grid-cols-3 gap-1 rounded-2xl border p-2 shadow-xl">
+          <div className="glass animate-rise absolute inset-x-3 bottom-[calc(5rem+env(safe-area-inset-bottom))] grid grid-cols-3 gap-1 rounded-2xl border p-2 shadow-xl">
             {mobileMore.map(({ href, label, icon: Icon }) => (
               <Link
                 key={href}
@@ -308,7 +314,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       )}
-      <nav className="panel fixed inset-x-0 bottom-0 z-40 flex border-t pb-[env(safe-area-inset-bottom)] md:hidden" aria-label="Alt menü">
+      <nav className="glass fixed inset-x-0 bottom-0 z-40 flex border-t pb-[env(safe-area-inset-bottom)] md:hidden" aria-label="Alt menü">
         {mobileMain.map(({ href, label, icon: Icon }) => (
           <Link
             key={href}
@@ -338,7 +344,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       {path !== "/planla" && path !== "/odak" && (
         <button
           onClick={() => setCaptureOpen(true)}
-          className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-30 grid h-14 w-14 place-items-center rounded-2xl bg-brand-600 text-white shadow-lg shadow-brand-600/30 transition duration-150 hover:bg-brand-700 active:scale-95 md:bottom-6 md:right-6"
+          className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-30 grid h-14 w-14 place-items-center rounded-2xl hero-gradient glow text-white transition duration-150 hover:scale-105 active:scale-95 md:bottom-6 md:right-6"
           aria-label="Hızlı görev ekle (kısayol: N)"
           title="Hızlı görev ekle (N)"
         >

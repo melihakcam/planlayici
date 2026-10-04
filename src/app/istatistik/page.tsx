@@ -143,7 +143,7 @@ function BarChart({
             >
               <div
                 className={`mx-auto w-full max-w-6 rounded-t-[4px] transition-opacity ${hover !== null && hover !== i ? "opacity-40" : ""}`}
-                style={{ height: `${(v / top) * 100}%`, minHeight: v > 0 ? 2 : 0, background: "#4f46e5" }}
+                style={{ height: `${(v / top) * 100}%`, minHeight: v > 0 ? 2 : 0, background: "linear-gradient(to top, #7c3aed, #db2777)" }}
               />
             </div>
           ))}

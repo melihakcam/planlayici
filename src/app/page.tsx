@@ -101,12 +101,7 @@ export default function TodayPage() {
   };
 
   return (
-    <div className="vivid stagger mx-auto max-w-6xl space-y-6">
-      <div className="vivid-bg" aria-hidden>
-        <span />
-        <span />
-        <span />
-      </div>
+    <div className="mx-auto max-w-6xl space-y-6">
       <TodayHero
         events={events.data ?? []}
         tasks={tasks.data ?? []}

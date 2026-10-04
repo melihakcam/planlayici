@@ -36,12 +36,7 @@ export default function PlanPage() {
   }, [week.data]);
 
   return (
-    <div className="vivid mx-auto max-w-3xl space-y-6">
-      <div className="vivid-bg" aria-hidden>
-        <span />
-        <span />
-        <span />
-      </div>
+    <div className="mx-auto max-w-3xl space-y-6">
 
       <header className="hero-gradient glow animate-rise relative overflow-hidden rounded-3xl p-6 text-white md:p-7">
         <span className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-white/20 blur-3xl" aria-hidden />
