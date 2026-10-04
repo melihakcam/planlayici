@@ -3,8 +3,6 @@
 import { CalendarClock, Check, Clock, Flag, Layers, Repeat, Star } from "lucide-react";
 import { fmtMinutes, fmtTime, relDay, ymd } from "@/lib/client";
 import { PRIORITY_COLOR, PRIORITY_LABEL, type Project, type Task } from "@/lib/types";
-import { XP } from "@/lib/xp";
-import { celebrate, xpToast } from "./celebrate";
 import { emitChanged } from "./toast";
 
 export default function TaskItem({
@@ -26,11 +24,6 @@ export default function TaskItem({
   const isTop = task.top_date === today;
 
   const toggle = async () => {
-    if (!done) {
-      const xp = XP.task(task.duration_min, task.priority, isTop);
-      if (isTop) celebrate(`Günün en önemli işlerinden biri bitti! +${xp} XP`);
-      else xpToast(xp, task.title);
-    }
     await onToggle();
     emitChanged();
   };

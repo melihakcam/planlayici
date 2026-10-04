@@ -1,8 +1,7 @@
 "use client";
 
-import { Pause, Play, RotateCcw, SkipForward, Sprout } from "lucide-react";
+import { Pause, Play, RotateCcw, SkipForward } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { celebrate, xpToast } from "@/components/celebrate";
 import { emitChanged, toast } from "@/components/toast";
 import { api, fmtMinutes, fmtTime, useApi } from "@/lib/client";
 import type { Task } from "@/lib/types";
@@ -15,10 +14,8 @@ type State = {
   taskId: string;
   cycles: number;
   startedAt: string | null;
-  /** Son odak yarıda bırakıldıysa fidan solmuş görünür (yeni başlangıçta düzelir) */
-  wilted?: boolean;
 };
-type Session = { id: string; minutes: number; started_at: string; task_title: string | null; abandoned: number };
+type Session = { id: string; minutes: number; started_at: string; task_title: string | null };
 
 const KEY = "planlayici:pomodoro";
 const LABEL: Record<Mode, string> = { focus: "Odak", short: "Kısa mola", long: "Uzun mola" };
@@ -99,17 +96,16 @@ export default function FocusPage() {
       await api("/api/focus", { body: { taskId: st.taskId || null, minutes, startedAt: st.startedAt } }).catch(() => {});
       sessions.reload();
       emitChanged();
-      if ("Notification" in window && Notification.permission === "granted") new Notification("Fidanın büyüdü", { body: "Odak süresi bitti, biraz mola ver." });
-      if (remainingNow > 0) xpToast(minutes, `${minutes} dk odak`);
-      else celebrate(`Fidanın çiçek açtı! ${minutes} dk odak · +${minutes} XP`);
+      if ("Notification" in window && Notification.permission === "granted") new Notification("Odak süresi bitti", { body: "Biraz mola ver." });
+      toast(remainingNow > 0 ? `${minutes} dakikalık odak kaydedildi.` : "Odak oturumu tamamlandı! Mola zamanı.", "success");
     } else if (st.mode === "focus") {
       toast("1 dakikadan kısa oturumlar kaydedilmez.");
     } else {
-      if ("Notification" in window && Notification.permission === "granted") new Notification("Mola bitti", { body: "Yeni bir fidan dikme zamanı." });
-      toast("Mola bitti, yeni bir fidan dikelim!");
+      if ("Notification" in window && Notification.permission === "granted") new Notification("Mola bitti", { body: "Odaklanma zamanı." });
+      toast("Mola bitti, hadi başlayalım!");
     }
     const next: Mode = st.mode === "focus" ? (cycles % 4 === 0 ? "long" : "short") : "focus";
-    setSt({ ...st, mode: next, endAt: null, remaining: durations(next), cycles, startedAt: null, wilted: false });
+    setSt({ ...st, mode: next, endAt: null, remaining: durations(next), cycles, startedAt: null });
     finishing.current = false;
   }, [st, durations, sessions]);
 
@@ -135,35 +131,16 @@ export default function FocusPage() {
   const total = durations(st.mode);
   const progress = 1 - left / total;
   const running = Boolean(st.endAt);
-  const inProgress = st.mode === "focus" && progress > 0 && progress < 1;
   const todo = (tasks.data ?? []).filter((t) => t.status === "todo");
-  const done = (sessions.data ?? []).filter((s) => !s.abandoned);
-  const todayMin = done.reduce((a, s) => a + s.minutes, 0);
+  const todayMin = (sessions.data ?? []).reduce((a, s) => a + s.minutes, 0);
   const goal = settings.data?.dailyFocusGoal ?? 120;
   const currentTask = todo.find((t) => t.id === st.taskId);
 
-  /** Odak yarıda bırakılırsa fidan solar (1 dakikadan uzunsa kaydedilir). */
-  const abandon = async () => {
-    if (st.mode !== "focus" || elapsedMin < 1) return;
-    await api("/api/focus", { body: { taskId: st.taskId || null, minutes: elapsedMin, startedAt: st.startedAt, abandoned: true } }).catch(() => {});
-    sessions.reload();
-    toast(`Fidan soldu. ${elapsedMin} dakikalık odak yarıda kaldı; bir dahakine sonuna kadar götürelim.`);
-  };
-
   const start = () =>
-    setSt({ ...st, endAt: Date.now() + st.remaining, startedAt: st.startedAt ?? new Date().toISOString(), wilted: false });
+    setSt({ ...st, endAt: Date.now() + st.remaining, startedAt: st.startedAt ?? new Date().toISOString() });
   const pause = () => setSt({ ...st, endAt: null, remaining: left });
-  const reset = async () => {
-    const wilted = inProgress && elapsedMin >= 1;
-    if (wilted) await abandon();
-    setSt({ ...st, endAt: null, remaining: durations(st.mode), startedAt: null, wilted });
-  };
-  const switchMode = async (m: Mode) => {
-    if (m === st.mode) return;
-    const wilted = inProgress && elapsedMin >= 1;
-    if (wilted) await abandon();
-    setSt({ ...st, mode: m, endAt: null, remaining: durations(m), startedAt: null, wilted });
-  };
+  const reset = () => setSt({ ...st, endAt: null, remaining: durations(st.mode), startedAt: null });
+  const switchMode = (m: Mode) => setSt({ ...st, mode: m, endAt: null, remaining: durations(m), startedAt: null });
 
   const R = 128;
   const C = 2 * Math.PI * R;
@@ -173,7 +150,7 @@ export default function FocusPage() {
     <div className="mx-auto max-w-5xl space-y-6">
       <header>
         <h1 className="text-2xl font-extrabold tracking-tight">Odak</h1>
-        <p className="muted text-sm">Odaklandıkça fidanın büyür; yarıda bırakırsan solar.</p>
+        <p className="muted text-sm">Pomodoro ile derin çalışma: odaklan, kısa mola ver, tekrarla.</p>
       </header>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -208,31 +185,17 @@ export default function FocusPage() {
                 style={{ transition: "stroke-dashoffset .25s linear" }}
               />
             </svg>
-            <div className="absolute inset-0 grid place-items-center">
-              {st.mode === "focus" ? (
-                <Plant growth={st.wilted ? 0.6 : progress} wilted={Boolean(st.wilted)} />
-              ) : (
-                <div className="text-center">
-                  <p className="text-sm font-semibold text-brand-600 dark:text-brand-500">{LABEL[st.mode]}</p>
-                  <p className="muted text-xs">Kalk, su iç, gözlerini dinlendir.</p>
-                </div>
-              )}
+            <div className="absolute inset-0 grid place-items-center text-center">
+              <div>
+                <p className="text-6xl font-extrabold tabular-nums tracking-tight">{fmt(left)}</p>
+                <p className="muted mt-1 text-sm">
+                  {LABEL[st.mode]} · {st.cycles + (st.mode === "focus" ? 1 : 0)}. oturum
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="text-center">
-            <p className="text-6xl font-extrabold tabular-nums tracking-tight" aria-live="off">
-              {fmt(left)}
-            </p>
-            <p className="muted mt-1 text-sm">
-              {LABEL[st.mode]} · {st.cycles + (st.mode === "focus" ? 1 : 0)}. oturum
-              {currentTask && st.mode === "focus" && (
-                <>
-                  {" "}· <span className="font-semibold text-[var(--text)]">{currentTask.title}</span>
-                </>
-              )}
-            </p>
-          </div>
+          {currentTask && st.mode === "focus" && <p className="text-sm font-semibold">{currentTask.title}</p>}
 
           <label className="w-full max-w-sm">
             <span className="label text-center">Ne üzerinde çalışıyorsun?</span>
@@ -247,7 +210,7 @@ export default function FocusPage() {
           </label>
 
           <div className="flex items-center gap-3">
-            <button className="btn-ghost h-12 w-12 rounded-full p-0" onClick={reset} aria-label="Sıfırla (yarıda bırakırsan fidan solar)" title="Sıfırla">
+            <button className="btn-ghost h-12 w-12 rounded-full p-0" onClick={reset} aria-label="Sıfırla" title="Sıfırla">
               <RotateCcw size={18} />
             </button>
             {running ? (
@@ -256,7 +219,7 @@ export default function FocusPage() {
               </button>
             ) : (
               <button className={`${st.mode === "focus" ? "btn-success" : "btn-primary"} h-14 min-w-44 rounded-2xl px-8 text-base`} onClick={start}>
-                <Play size={20} /> {progress > 0 ? "Devam et" : st.mode === "focus" ? "Fidan dik ve başla" : "Molayı başlat"}
+                <Play size={20} /> {progress > 0 ? "Devam et" : st.mode === "focus" ? "Başla" : "Molayı başlat"}
               </button>
             )}
             <button className="btn-ghost h-12 w-12 rounded-full p-0" onClick={finish} aria-label="Şimdi bitir" title="Şimdi bitir">
@@ -276,31 +239,14 @@ export default function FocusPage() {
           </section>
 
           <section className="card">
-            <h2 className="mb-3 font-semibold">Bugünkü bahçen</h2>
-            {(sessions.data ?? []).length === 0 ? (
-              <p className="muted text-sm">Henüz fidan yok. İlk oturumla bahçeni kurmaya başla.</p>
-            ) : (
-              <div className="mb-4 flex flex-wrap gap-1.5" aria-label={`${done.length} fidan büyüdü, ${(sessions.data ?? []).length - done.length} fidan soldu`}>
-                {(sessions.data ?? [])
-                  .slice()
-                  .reverse()
-                  .map((s) => (
-                    <span
-                      key={s.id}
-                      title={`${fmtTime(s.started_at)} · ${s.minutes} dk${s.abandoned ? " (yarıda kaldı)" : ""}`}
-                      className={`grid h-9 w-9 place-items-center rounded-xl ${s.abandoned ? "surface-2 muted" : "bg-emerald-100 text-success-600 dark:bg-emerald-500/15 dark:text-success-500"}`}
-                    >
-                      <Sprout size={18} />
-                    </span>
-                  ))}
-              </div>
-            )}
+            <h2 className="mb-3 font-semibold">Bugünkü oturumlar</h2>
+            {(sessions.data ?? []).length === 0 && <p className="muted text-sm">Henüz oturum yok.</p>}
             <ul className="space-y-2">
-              {(sessions.data ?? []).map((s) => (
-                <li key={s.id} className="flex items-center justify-between gap-2 text-sm">
-                  <span className={`min-w-0 truncate ${s.abandoned ? "muted line-through" : ""}`}>{s.task_title ?? "Serbest odak"}</span>
+              {(sessions.data ?? []).map((x) => (
+                <li key={x.id} className="flex items-center justify-between gap-2 text-sm">
+                  <span className="min-w-0 truncate">{x.task_title ?? "Serbest odak"}</span>
                   <span className="muted shrink-0 text-xs tabular-nums">
-                    {fmtTime(s.started_at)} · {s.minutes} dk
+                    {fmtTime(x.started_at)} · {x.minutes} dk
                   </span>
                 </li>
               ))}
@@ -309,56 +255,6 @@ export default function FocusPage() {
         </aside>
       </div>
     </div>
-  );
-}
-
-/** Odak süresince büyüyen fidan: filiz → yapraklar → tomurcuk → çiçek. Solmuşsa gri ve eğik. */
-function Plant({ growth, wilted }: { growth: number; wilted: boolean }) {
-  const g = Math.max(0, Math.min(1, growth));
-  const stemTop = 150 - 92 * Math.max(0.12, g);
-  const leaf = wilted ? "var(--muted)" : "var(--success)";
-  const leaves = [
-    { at: 0.2, y: 132, side: -1 },
-    { at: 0.35, y: 120, side: 1 },
-    { at: 0.5, y: 104, side: -1 },
-    { at: 0.65, y: 92, side: 1 },
-  ];
-  const label = wilted ? "Solmuş fidan" : g >= 1 ? "Çiçek açmış fidan" : `Fidan yüzde ${Math.round(g * 100)} büyüdü`;
-  return (
-    <svg width="170" height="170" viewBox="0 0 170 190" role="img" aria-label={label} style={{ transform: wilted ? "rotate(-8deg)" : undefined, transition: "transform 400ms ease-out" }}>
-      {/* saksı */}
-      <path d="M52 150h66l-8 34H60z" fill={wilted ? "var(--panel-2)" : "#c2410c"} opacity={wilted ? 1 : 0.85} />
-      <rect x="46" y="144" width="78" height="10" rx="4" fill={wilted ? "var(--border)" : "#9a3412"} />
-      {/* gövde */}
-      <path d={`M85 148 Q${wilted ? 96 : 85} ${(148 + stemTop) / 2} 85 ${stemTop}`} stroke={leaf} strokeWidth="5" strokeLinecap="round" fill="none" />
-      {/* yapraklar */}
-      {leaves.map((l) =>
-        g >= l.at ? (
-          <ellipse
-            key={l.at}
-            cx={85 + l.side * 16}
-            cy={l.y}
-            rx="15"
-            ry="7"
-            fill={leaf}
-            opacity={wilted ? 0.6 : 0.9}
-            transform={`rotate(${l.side * (wilted ? 45 : -28)} ${85 + l.side * 16} ${l.y})`}
-            className="animate-pop"
-          />
-        ) : null,
-      )}
-      {/* tomurcuk / çiçek */}
-      {!wilted && g >= 0.85 && g < 1 && <circle cx="85" cy={stemTop} r="7" fill="var(--streak)" className="animate-pop" />}
-      {!wilted && g >= 1 && (
-        <g className="animate-pop">
-          {[0, 72, 144, 216, 288].map((a) => (
-            <ellipse key={a} cx="85" cy={stemTop - 12} rx="7" ry="12" fill="#f59e0b" transform={`rotate(${a} 85 ${stemTop})`} />
-          ))}
-          <circle cx="85" cy={stemTop} r="7" fill="var(--streak)" />
-        </g>
-      )}
-      {g < 0.2 && !wilted && <circle cx="85" cy={stemTop} r="4" fill={leaf} />}
-    </svg>
   );
 }
 

@@ -11,7 +11,7 @@ export const GET = route(async (req) => {
   return json(
     await all(
       `SELECT f.*, t.title AS task_title FROM focus_sessions f LEFT JOIN tasks t ON t.id = f.task_id
-       WHERE f.started_at >= ? ORDER BY f.started_at DESC`,
+       WHERE f.abandoned = 0 AND f.started_at >= ? ORDER BY f.started_at DESC`,
       [since.toISOString()],
     ),
   );

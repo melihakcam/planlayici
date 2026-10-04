@@ -4,15 +4,13 @@ import { AlertTriangle, CalendarClock, Check, Flame, MapPin, RefreshCw, Star } f
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import EventModal, { type EventDraft } from "@/components/EventModal";
-import { xpToast } from "@/components/celebrate";
-import { useProgress } from "@/components/ProgressBadge";
 import QuickAdd from "@/components/QuickAdd";
 import TaskItem from "@/components/TaskItem";
 import TodayHero from "@/components/TodayHero";
+import type { Progress } from "@/lib/progress";
 import { emitChanged, onChanged, toast } from "@/components/toast";
 import { addDays, api, fmtMinutes, fmtTime, relDay, useApi, ymd } from "@/lib/client";
 import { eventColor, type EventRow, type Habit, type ProjectStats, type Task } from "@/lib/types";
-import { XP } from "@/lib/xp";
 
 export default function TodayPage() {
   const today = ymd(new Date());
@@ -22,7 +20,7 @@ export default function TodayPage() {
   const tasks = useApi<Task[]>("/api/tasks");
   const projects = useApi<ProjectStats[]>("/api/projects");
   const status = useApi<{ plannedAt: string | null; missed: number }>("/api/plan?status=1");
-  const progress = useProgress();
+  const progress = useApi<Progress>("/api/progress");
   const habits = useApi<Habit[]>("/api/habits");
   const free = useApi<{ start: number; end: number }[]>("/api/schedule");
   const [modal, setModal] = useState<{ event?: EventRow | null; draft?: EventDraft | null } | null>(null);
@@ -36,6 +34,7 @@ export default function TodayPage() {
     free.reload();
     status.reload();
     projects.reload();
+    progress.reload();
   };
   useEffect(() => onChanged(reloadAll));
   useEffect(() => {
@@ -92,7 +91,6 @@ export default function TodayPage() {
     const cur = h.logs[today] ?? 0;
     const next = cur >= h.target ? 0 : cur + 1;
     await api(`/api/habits/${h.id}`, { body: { date: today, count: next } });
-    if (next === h.target) xpToast(XP.habit, h.name);
     habits.reload();
     emitChanged();
   };

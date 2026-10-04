@@ -29,7 +29,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, useApi } from "@/lib/client";
 import type { EventRow, ProjectStats } from "@/lib/types";
 import Modal from "./Modal";
-import ProgressBadge from "./ProgressBadge";
 import QuickAdd from "./QuickAdd";
 import { emitChanged, toast, type ToastKind } from "./toast";
 
@@ -254,7 +253,6 @@ function Shell({ children }: { children: React.ReactNode }) {
           </span>
           <span className="text-lg font-extrabold tracking-tight">Planlayıcı</span>
         </Link>
-        <ProgressBadge />
         <nav className="mt-4 flex flex-1 flex-col gap-4 overflow-y-auto" aria-label="Ana menü">
           {NAV_GROUPS.map((g) => (
             <div key={g.title}>
@@ -283,7 +281,6 @@ function Shell({ children }: { children: React.ReactNode }) {
             <span className="text-lg font-extrabold tracking-tight">Planlayıcı</span>
           </Link>
           <div className="flex items-center gap-1">
-            <ProgressBadge compact />
             {status?.connected && (
               <button onClick={() => sync(true)} className="btn-ghost h-11 w-11 border-0 p-0" aria-label="Google Takvim ile senkronize et">
                 <RefreshCw size={18} className={syncing ? "animate-spin" : ""} />

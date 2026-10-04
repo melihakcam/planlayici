@@ -1,11 +1,11 @@
 "use client";
 
-import { CalendarPlus, Flame, Play, Star, Sunrise, Target, Timer } from "lucide-react";
+import { CalendarPlus, Play, Star, Sunrise, Target, Timer } from "lucide-react";
 import Link from "next/link";
 import { fmtMinutes, fmtTime } from "@/lib/client";
 import type { Progress } from "@/lib/progress";
 import type { EventRow, Task } from "@/lib/types";
-import { Ring } from "./ProgressBadge";
+import { Ring } from "./Ring";
 
 function greeting(h: number) {
   if (h < 6) return "İyi geceler";
@@ -99,13 +99,7 @@ export default function TodayHero({
           </div>
         </div>
 
-        <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:col-span-2 lg:col-span-1 lg:w-56 lg:grid-cols-2">
-          <Mini
-            icon={<Flame size={16} fill={progress?.activeToday ? "currentColor" : "none"} />}
-            tone="text-streak-600 dark:text-streak-500"
-            label="Seri"
-            value={`${progress?.streak ?? 0} gün`}
-          />
+        <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:col-span-2 lg:col-span-1 lg:w-56 lg:grid-cols-1">
           <Mini
             icon={<Timer size={16} />}
             tone="text-success-600 dark:text-success-500"
