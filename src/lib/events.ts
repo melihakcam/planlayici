@@ -487,7 +487,7 @@ async function fetchCalendarEvents(calendarId: string, timeMin: Date, timeMax: D
 /** Seçili Google takvimlerindeki etkinlikleri belirli bir pencere içinde yerel veritabanına çeker. */
 export async function pullFromGoogle() {
   await syncCalendarList();
-  const calendars = (await listCalendars()).filter((c) => c.selected);
+  const calendars = (await listCalendars()).filter((c) => c.selected && !isLocalCalendar(c.id));
   const timeMin = addDays(new Date(), -PULL_PAST_DAYS);
   const timeMax = addDays(new Date(), PULL_FUTURE_DAYS);
 
