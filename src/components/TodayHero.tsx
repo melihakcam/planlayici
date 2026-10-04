@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarPlus, Flame, Moon, Play, Star, Sunrise, Target, Timer } from "lucide-react";
+import { CalendarPlus, Flame, Play, Star, Sunrise, Target, Timer } from "lucide-react";
 import Link from "next/link";
 import { fmtMinutes, fmtTime } from "@/lib/client";
 import type { Progress } from "@/lib/progress";
@@ -44,7 +44,6 @@ export default function TodayHero({
   const nextTop = tops.find((t) => t.status === "todo");
   const currentTask = current?.task_id ? tasks.find((t) => t.id === current.task_id && t.status === "todo") : undefined;
   const p = progress?.today;
-  const closed = Boolean(p?.closed);
 
   // Tek birincil eylem: durumuna göre değişir
   let cta: { href: string; label: string; icon: typeof Play };
@@ -52,9 +51,6 @@ export default function TodayHero({
   if (!planned && hour < 20) {
     cta = { href: "/planla", label: "Günü planla", icon: Sunrise };
     line = "Günü 5 dakikada planla; gerisini ben takip edeyim.";
-  } else if (hour >= 20 && !closed) {
-    cta = { href: "/kapanis", label: "Günü kapat", icon: Moon };
-    line = "Günü kapatmadan önce yapılanları işaretle, kalanlara karar ver.";
   } else if (currentTask) {
     cta = { href: `/odak?task=${currentTask.id}`, label: "Odaklanmaya başla", icon: Play };
     line = `Şu an: ${currentTask.title} · bitişe ${fmtMinutes(Math.max(1, Math.round((current!.end_ms - now) / 60_000)))}`;

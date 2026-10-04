@@ -15,7 +15,6 @@ import {
   GraduationCap,
   LayoutDashboard,
   Moon,
-  MoonStar,
   MoreHorizontal,
   Plus,
   RefreshCw,
@@ -41,7 +40,6 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { href: "/", label: "Bugün", icon: LayoutDashboard },
       { href: "/planla", label: "Günü planla", icon: Sunrise },
-      { href: "/kapanis", label: "Günü kapat", icon: MoonStar },
       { href: "/takvim", label: "Takvim", icon: CalendarDays },
       { href: "/gorevler", label: "Görevler", icon: CheckSquare },
       { href: "/projeler", label: "Projeler", icon: FolderKanban },
