@@ -14,7 +14,7 @@ export const GET = route(async (req) => {
     all<{ completed_at: string }>("SELECT completed_at FROM tasks WHERE status = 'done' AND completed_at >= ?", [
       start.toISOString(),
     ]),
-    all<{ started_at: string; minutes: number }>("SELECT started_at, minutes FROM focus_sessions WHERE started_at >= ?", [
+    all<{ started_at: string; minutes: number }>("SELECT started_at, minutes FROM focus_sessions WHERE abandoned = 0 AND started_at >= ?", [
       start.toISOString(),
     ]),
     all<{ start_ms: number; end_ms: number }>(

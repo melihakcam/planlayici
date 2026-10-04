@@ -1,7 +1,7 @@
 import { addDays, ymd } from "./db";
 import { listProjectStats } from "./projects";
 import { listTasks } from "./tasks";
-import { AREAS, PRIORITY_LABEL, type Suggestion } from "./types";
+import { PRIORITY_LABEL, type Suggestion } from "./types";
 
 const PRIORITY_SCORE: Record<number, number> = { 1: 40, 2: 25, 3: 12, 4: 4 };
 
@@ -46,7 +46,7 @@ export async function suggestTasks(limit = 15): Promise<Suggestion[]> {
           const gap = Math.max(0, p.weekly_hours - p.week_done_h - p.week_planned_h);
           if (gap > 0) {
             score += Math.min(20, (gap / p.weekly_hours) * 20);
-            reasons.push(`${AREAS[p.area]?.icon ?? ""} ${p.name}: haftalık hedefin ${gap.toFixed(1)} sa gerisinde`);
+            reasons.push(`${p.name}: haftalık hedefin ${gap.toFixed(1)} sa gerisinde`);
           }
         }
         if (p.deadline && p.deadline <= day(7)) (score += 10), reasons.push(`${p.name} teslimi yakın`);

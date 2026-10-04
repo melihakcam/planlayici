@@ -1,22 +1,18 @@
 "use client";
 
-import { AlertTriangle, ArrowRight, CalendarClock, CalendarPlus, Check, Clock, MapPin, RefreshCw, Star, Sun } from "lucide-react";
+import { AlertTriangle, CalendarClock, Check, Flame, MapPin, RefreshCw, Star } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import EventModal, { type EventDraft } from "@/components/EventModal";
+import { xpToast } from "@/components/celebrate";
+import { useProgress } from "@/components/ProgressBadge";
 import QuickAdd from "@/components/QuickAdd";
 import TaskItem from "@/components/TaskItem";
-import { onChanged, toast } from "@/components/toast";
+import TodayHero from "@/components/TodayHero";
+import { emitChanged, onChanged, toast } from "@/components/toast";
 import { addDays, api, fmtMinutes, fmtTime, relDay, useApi, ymd } from "@/lib/client";
-import { AREAS, eventColor, type EventRow, type Habit, type ProjectStats, type Task } from "@/lib/types";
-
-function greeting() {
-  const h = new Date().getHours();
-  if (h < 6) return "İyi geceler";
-  if (h < 12) return "Günaydın";
-  if (h < 18) return "İyi günler";
-  return "İyi akşamlar";
-}
+import { eventColor, type EventRow, type Habit, type ProjectStats, type Task } from "@/lib/types";
+import { XP } from "@/lib/xp";
 
 export default function TodayPage() {
   const today = ymd(new Date());
@@ -26,8 +22,8 @@ export default function TodayPage() {
   const tasks = useApi<Task[]>("/api/tasks");
   const projects = useApi<ProjectStats[]>("/api/projects");
   const status = useApi<{ plannedAt: string | null; missed: number }>("/api/plan?status=1");
+  const progress = useProgress();
   const habits = useApi<Habit[]>("/api/habits");
-  const focus = useApi<{ minutes: number }[]>("/api/focus?days=1");
   const free = useApi<{ start: number; end: number }[]>("/api/schedule");
   const [modal, setModal] = useState<{ event?: EventRow | null; draft?: EventDraft | null } | null>(null);
   const [planning, setPlanning] = useState(false);
@@ -61,8 +57,6 @@ export default function TodayPage() {
       ),
     [tasks.data, today],
   );
-  const doneToday = todayTasks.filter((t) => t.status === "done").length;
-  const focusMin = (focus.data ?? []).reduce((a, f) => a + f.minutes, 0);
   const freeMin = Math.round((free.data ?? []).reduce((a, s) => a + (s.end - s.start), 0) / 60_000);
   const allDay = (events.data ?? []).filter((e) => e.all_day);
   const timed = (events.data ?? []).filter((e) => !e.all_day);
@@ -96,8 +90,11 @@ export default function TodayPage() {
 
   const logHabit = async (h: Habit) => {
     const cur = h.logs[today] ?? 0;
-    await api(`/api/habits/${h.id}`, { body: { date: today, count: cur >= h.target ? 0 : cur + 1 } });
+    const next = cur >= h.target ? 0 : cur + 1;
+    await api(`/api/habits/${h.id}`, { body: { date: today, count: next } });
+    if (next === h.target) xpToast(XP.habit, h.name);
     habits.reload();
+    emitChanged();
   };
 
   const newEvent = () => {
@@ -107,35 +104,15 @@ export default function TodayPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="muted text-sm">{new Date().toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
-          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{greeting()} 👋</h1>
-        </div>
-        <div className="flex gap-2">
-          <button className="btn-ghost" onClick={newEvent}>
-            <CalendarPlus size={16} /> Etkinlik
-          </button>
-          <Link href="/planla" className="btn-primary">
-            <Sun size={16} /> Günü planla
-          </Link>
-        </div>
-      </header>
-
-      {/* Sabah planı hatırlatması */}
-      {status.data && !status.data.plannedAt && new Date().getHours() < 20 && (
-        <Link
-          href="/planla"
-          className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 p-4 text-white shadow-sm transition hover:opacity-95"
-        >
-          <Sun size={28} className="shrink-0" />
-          <div className="flex-1">
-            <p className="font-semibold">Bugünü henüz planlamadın</p>
-            <p className="text-sm opacity-90">5 dakikada dünden kalanları toparla, en önemli 3 işini seç, saatlere yerleştir.</p>
-          </div>
-          <ArrowRight className="shrink-0" />
-        </Link>
-      )}
+      <TodayHero
+        events={events.data ?? []}
+        tasks={tasks.data ?? []}
+        progress={progress.data}
+        planned={Boolean(status.data?.plannedAt)}
+        freeMin={freeMin}
+        now={now}
+        onNewEvent={newEvent}
+      />
 
       {/* Kaçırılan bloklar */}
       {(status.data?.missed ?? 0) > 0 && (
@@ -150,14 +127,6 @@ export default function TodayPage() {
         </div>
       )}
 
-      <NowCard events={events.data ?? []} tasks={tasks.data ?? []} now={now} today={today} onToggle={toggleTask} onOpen={(e) => setModal({ event: e })} />
-
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Bugünkü etkinlik" value={String(events.data?.length ?? "–")} />
-        <Stat label="Tamamlanan görev" value={`${doneToday}/${todayTasks.length}`} />
-        <Stat label="Odak süresi" value={fmtMinutes(focusMin)} />
-        <Stat label="Kalan boş zaman" value={fmtMinutes(freeMin)} />
-      </section>
 
       <div className="grid gap-6 lg:grid-cols-5">
         <section className="card lg:col-span-3">
@@ -219,6 +188,8 @@ export default function TodayPage() {
         </section>
 
         <div className="space-y-6 lg:col-span-2">
+          <TopThree tasks={tasks.data ?? []} today={today} onToggle={toggleTask} />
+
           <section className="card">
             <h2 className="mb-3 font-semibold">Bugünkü görevler</h2>
             <QuickAdd projects={projects.data ?? []} defaults={{ due: today }} onAdded={tasks.reload} placeholder="Bugün için görev ekle…" />
@@ -258,7 +229,12 @@ export default function TodayPage() {
                         {c}/{h.target}
                       </span>
                     )}
-                    {h.streak > 0 && <span className="text-xs">🔥 {h.streak}</span>}
+                    {h.streak > 0 && (
+                      <span className="flex items-center gap-0.5 text-xs font-semibold text-streak-600 dark:text-streak-500" aria-label={`${h.streak} günlük seri`}>
+                        <Flame size={13} fill="currentColor" />
+                        {h.streak}
+                      </span>
+                    )}
                     <span
                       className="grid h-7 w-7 place-items-center rounded-full border-2"
                       style={{ borderColor: h.color, background: ok ? h.color : undefined }}
@@ -272,14 +248,6 @@ export default function TodayPage() {
           </section>
 
           <Upcoming projects={projects.data ?? []} tasks={tasks.data ?? []} today={today} />
-
-          <Link href="/odak" className="card flex items-center gap-3 transition hover:border-brand-500">
-            <Clock className="text-brand-600" />
-            <div>
-              <p className="text-sm font-semibold">Odak zamanı başlat</p>
-              <p className="muted text-xs">Pomodoro ile derin çalışma</p>
-            </div>
-          </Link>
         </div>
       </div>
 
@@ -294,95 +262,36 @@ export default function TodayPage() {
   );
 }
 
-/** Şu an ne yapılmalı + günün en önemli 3 işi */
-function NowCard({
-  events,
-  tasks,
-  now,
-  today,
-  onToggle,
-  onOpen,
-}: {
-  events: EventRow[];
-  tasks: Task[];
-  now: number;
-  today: string;
-  onToggle: (t: Task) => void;
-  onOpen: (e: EventRow) => void;
-}) {
-  const timed = events.filter((e) => !e.all_day).sort((a, b) => a.start_ms - b.start_ms);
-  const current = timed.find((e) => e.start_ms <= now && e.end_ms > now);
-  const next = timed.find((e) => e.start_ms > now);
+/** Günün en önemli 3 işi: günün başarısı bunlarla ölçülür */
+function TopThree({ tasks, today, onToggle }: { tasks: Task[]; today: string; onToggle: (t: Task) => void }) {
   const top = tasks.filter((t) => t.top_date === today && !t.parent_id);
-  const currentTask = current?.task_id ? tasks.find((t) => t.id === current.task_id) : undefined;
-  const mins = (ms: number) => Math.max(0, Math.round(ms / 60_000));
-
+  const done = top.filter((t) => t.status === "done").length;
   return (
-    <section className="grid gap-4 lg:grid-cols-2">
-      <div className="card flex flex-col justify-between gap-3 border-brand-500/40">
-        <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">Şimdi</p>
-        {current ? (
-          <div>
-            <button className="text-left text-xl font-bold hover:underline" onClick={() => onOpen(current)}>
-              {current.title}
-            </button>
-            <p className="muted text-sm">
-              {fmtTime(current.start)}–{fmtTime(current.end)} · bitişe {fmtMinutes(mins(current.end_ms - now))}
-            </p>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/[0.06] dark:bg-white/[0.08]">
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${((now - current.start_ms) / (current.end_ms - current.start_ms)) * 100}%`,
-                  background: eventColor(current),
-                }}
-              />
-            </div>
-            {currentTask && currentTask.status === "todo" && (
-              <button className="btn-primary mt-3" onClick={() => onToggle(currentTask)}>
-                <Check size={16} /> Tamamladım
-              </button>
-            )}
-          </div>
-        ) : (
-          <div>
-            <p className="text-xl font-bold">Şu an boş zamandasın</p>
-            <p className="muted text-sm">
-              {top.find((t) => t.status === "todo")
-                ? `Önerim: "${top.find((t) => t.status === "todo")!.title}" ile başla.`
-                : "Sabah planında en önemli işlerini seçersen burada önereceğim."}
-            </p>
-          </div>
-        )}
-        {next && (
-          <p className="text-sm">
-            <span className="muted">Sıradaki:</span> <b>{next.title}</b>{" "}
-            <span className="muted">
-              {fmtTime(next.start)} ({fmtMinutes(mins(next.start_ms - now))} sonra)
-            </span>
-          </p>
+    <section className="card border-orange-200 dark:border-orange-500/25">
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="flex items-center gap-2 font-semibold">
+          <Star size={18} className="text-streak-600" fill="currentColor" /> Günün en önemli 3 işi
+        </h2>
+        {top.length > 0 && (
+          <span className="chip bg-orange-100 text-streak-600 dark:bg-orange-500/15 dark:text-streak-500">
+            {done}/{top.length}
+          </span>
         )}
       </div>
-
-      <div className="card">
-        <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-600">
-          <Star size={14} fill="currentColor" /> Günün en önemli 3 işi
+      {top.length === 0 ? (
+        <p className="muted text-sm">
+          Henüz seçilmedi.{" "}
+          <Link href="/planla" className="font-semibold text-brand-600 hover:underline">
+            Sabah planında seç
+          </Link>
         </p>
-        {top.length === 0 ? (
-          <p className="muted text-sm">
-            Henüz seçilmedi.{" "}
-            <Link href="/planla" className="text-brand-600 hover:underline">
-              Sabah planında seç →
-            </Link>
-          </p>
-        ) : (
-          <div className="space-y-0.5">
-            {top.map((t) => (
-              <TaskItem key={t.id} task={t} onToggle={() => onToggle(t)} />
-            ))}
-          </div>
-        )}
-      </div>
+      ) : (
+        <div>
+          {top.map((t) => (
+            <TaskItem key={t.id} task={t} onToggle={() => onToggle(t)} />
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -394,7 +303,7 @@ function Upcoming({ projects, tasks, today }: { projects: ProjectStats[]; tasks:
   const items = [
     ...projects
       .filter((p) => p.status === "active" && p.deadline && p.deadline >= today && p.deadline <= in14)
-      .map((p) => ({ key: `p${p.id}`, date: p.deadline!, title: `${AREAS[p.area]?.icon ?? ""} ${p.name}`, kind: "Proje teslimi" })),
+      .map((p) => ({ key: `p${p.id}`, date: p.deadline!, title: p.name, kind: "Proje teslimi" })),
     ...tasks
       .filter((t) => t.status === "todo" && !t.parent_id && t.due && t.due > today && t.due <= in7)
       .map((t) => ({ key: `t${t.id}`, date: t.due!, title: t.title, kind: "Son tarih" })),
@@ -420,11 +329,3 @@ function Upcoming({ projects, tasks, today }: { projects: ProjectStats[]; tasks:
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="card">
-      <p className="muted text-xs">{label}</p>
-      <p className="mt-1 text-2xl font-bold tracking-tight">{value}</p>
-    </div>
-  );
-}

@@ -22,6 +22,14 @@ export type Settings = {
   daySchedule: Record<string, { start: string; end: string } | null> | null;
   /** Yapılmadan geçen zaman bloklarını otomatik olarak sonraki boşluğa kaydır */
   autoReschedule: boolean;
+  /** Bir güne yerleştirilecek görev bloklarının üst sınırı (dakika) — aşırı dolu günleri önler */
+  dailyMaxMinutes: number;
+  /** Günlük odak hedefi (dakika) — Bugün sayfasındaki halka */
+  dailyFocusGoal: number;
+  /** Dönem bilgisi: ders programı bu aralıkta, sınav haftaları hariç oluşturulur */
+  semesterStart: string | null;
+  semesterEnd: string | null;
+  examWeeks: { name: string; start: string; end: string; skipClasses: boolean }[];
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -40,6 +48,11 @@ export const DEFAULT_SETTINGS: Settings = {
   planCalendarId: "primary",
   daySchedule: null,
   autoReschedule: false,
+  dailyMaxMinutes: 240,
+  dailyFocusGoal: 120,
+  semesterStart: null,
+  semesterEnd: null,
+  examWeeks: [],
 };
 
 /** Bir günün planlama penceresi; o gün planlanmayacaksa null. */

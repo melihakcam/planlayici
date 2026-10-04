@@ -55,17 +55,31 @@ export type Task = {
   planned_date: string | null;
   /** "Günün en önemli 3 işi" olarak işaretlendiği tarih */
   top_date: string | null;
+  /** Doluysa iş bu uzunlukta parçalara bölünüp günlere dağıtılır (dk) */
+  chunk_min: number | null;
+  /** Tercih edilen zaman dilimi */
+  time_pref: TimePref | null;
+  /** Takvimde bu göreve ayrılmış toplam süre (dk) */
+  scheduled_min?: number;
   event_start?: string | null;
   event_end?: string | null;
   event_all_day?: number | null;
 };
 
+export type TimePref = "sabah" | "ogle" | "aksam";
+/** Zaman dilimleri: [başlangıç saati, bitiş saati) */
+export const TIME_PREFS: Record<TimePref, { label: string; from: number; to: number }> = {
+  sabah: { label: "Sabah (12:00'ye kadar)", from: 0, to: 12 },
+  ogle: { label: "Öğleden sonra (12–18)", from: 12, to: 18 },
+  aksam: { label: "Akşam (18:00'den sonra)", from: 18, to: 24 },
+};
+
 export type Area = "yazilim" | "is" | "okul" | "kisisel";
-export const AREAS: Record<Area, { label: string; icon: string }> = {
-  yazilim: { label: "Yazılım", icon: "💻" },
-  is: { label: "İş", icon: "💼" },
-  okul: { label: "Okul", icon: "🎓" },
-  kisisel: { label: "Kişisel", icon: "🏠" },
+export const AREAS: Record<Area, { label: string }> = {
+  yazilim: { label: "Yazılım" },
+  is: { label: "İş" },
+  okul: { label: "Okul" },
+  kisisel: { label: "Kişisel" },
 };
 
 export type Project = {

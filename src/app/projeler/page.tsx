@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarClock, FolderKanban, Plus, Trash2 } from "lucide-react";
+import AreaIcon from "@/components/AreaIcon";
 import { useEffect, useState } from "react";
 import Modal from "@/components/Modal";
 import QuickAdd from "@/components/QuickAdd";
@@ -81,7 +82,7 @@ export default function ProjectsPage() {
         return (
           <section key={area} className="space-y-3">
             <h2 className="text-sm font-semibold muted">
-              {AREAS[area].icon} {AREAS[area].label}
+              <AreaIcon area={area} className="mr-1 inline" /> {AREAS[area].label}
             </h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {items.map((p) => (
@@ -205,7 +206,7 @@ function ProjectEditor({
             <select className="input" value={f.area ?? "kisisel"} onChange={(e) => set({ area: e.target.value as Area })}>
               {(Object.keys(AREAS) as Area[]).map((a) => (
                 <option key={a} value={a}>
-                  {AREAS[a].icon} {AREAS[a].label}
+                  {AREAS[a].label}
                 </option>
               ))}
             </select>

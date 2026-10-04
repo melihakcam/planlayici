@@ -1,11 +1,12 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import AreaIcon from "@/components/AreaIcon";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { emitChanged, toast } from "@/components/toast";
 import { api, fmtDate, fmtMinutes, relDay, useApi } from "@/lib/client";
-import { AREAS, type ProjectStats } from "@/lib/types";
+import type { ProjectStats } from "@/lib/types";
 
 type Week = {
   start: string;
@@ -131,7 +132,7 @@ export default function WeekPage() {
                 return (
                   <div key={p.id} className="flex items-center gap-3 text-sm">
                     <span className="w-40 shrink-0 truncate">
-                      {AREAS[p.area]?.icon} {p.name}
+                      <AreaIcon area={p.area} className="mr-1 inline" /> {p.name}
                     </span>
                     <div className="flex h-2 flex-1 overflow-hidden rounded-full bg-black/[0.06] dark:bg-white/[0.08]">
                       <div style={{ width: `${Math.min(100, (p.week_done_h / Math.max(p.weekly_hours, total, 0.1)) * 100)}%`, background: p.color }} />

@@ -18,14 +18,15 @@ export const GET = route(async (req) => {
 });
 
 export const POST = route(async (req) => {
-  const b = await body<{ taskId?: string | null; minutes?: number; startedAt?: string }>(req);
+  const b = await body<{ taskId?: string | null; minutes?: number; startedAt?: string; abandoned?: boolean }>(req);
   const minutes = Math.round(Number(b.minutes) || 0);
   if (minutes <= 0) return json({ error: "Süre geçersiz" }, 400);
-  await run("INSERT INTO focus_sessions (id, task_id, started_at, minutes) VALUES (?, ?, ?, ?)", [
+  await run("INSERT INTO focus_sessions (id, task_id, started_at, minutes, abandoned) VALUES (?, ?, ?, ?, ?)", [
     uid(),
     b.taskId || null,
     b.startedAt || nowIso(),
     minutes,
+    b.abandoned ? 1 : 0,
   ]);
   return json({ ok: true }, 201);
 });

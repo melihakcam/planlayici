@@ -30,7 +30,7 @@ export async function listProjectStats(ref = new Date()): Promise<ProjectStats[]
     ),
     all<{ project_id: string; minutes: number }>(
       `SELECT t.project_id, f.minutes FROM focus_sessions f JOIN tasks t ON t.id = f.task_id
-       WHERE t.project_id IS NOT NULL AND f.started_at >= ? AND f.started_at < ?`,
+       WHERE t.project_id IS NOT NULL AND f.abandoned = 0 AND f.started_at >= ? AND f.started_at < ?`,
       [start.toISOString(), end.toISOString()],
     ),
   ]);

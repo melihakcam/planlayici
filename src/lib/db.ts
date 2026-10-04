@@ -13,7 +13,7 @@ process.env.TZ = process.env.APP_TIMEZONE || "Europe/Istanbul";
  */
 export const OWNER = "owner";
 
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL);
@@ -157,6 +157,26 @@ const MIGRATIONS: Record<number, string> = {
     INSERT INTO calendars (id, summary, color, access_role, is_primary, selected)
     VALUES ('local:plan', 'Kişisel Plan', '#7c3aed', 'local', 0, 1)
     ON CONFLICT (user_id, id) DO NOTHING;
+  `,
+  // v2: iş bölme + zaman tercihi, akşam kapanışı, odak fidanı, ders programı
+  6: `
+    ALTER TABLE tasks ADD COLUMN IF NOT EXISTS chunk_min INTEGER;
+    ALTER TABLE tasks ADD COLUMN IF NOT EXISTS time_pref TEXT;
+    ALTER TABLE daily_plans ADD COLUMN IF NOT EXISTS closed_at TEXT;
+    ALTER TABLE daily_plans ADD COLUMN IF NOT EXISTS reflection TEXT NOT NULL DEFAULT '';
+    ALTER TABLE focus_sessions ADD COLUMN IF NOT EXISTS abandoned INTEGER NOT NULL DEFAULT 0;
+    CREATE TABLE IF NOT EXISTS courses (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL DEFAULT 'owner',
+      name TEXT NOT NULL,
+      code TEXT NOT NULL DEFAULT '',
+      instructor TEXT NOT NULL DEFAULT '',
+      room TEXT NOT NULL DEFAULT '',
+      weekday INTEGER NOT NULL,
+      start_time TEXT NOT NULL,
+      end_time TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
   `,
 };
 

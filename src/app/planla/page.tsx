@@ -1,12 +1,13 @@
 "use client";
 
 import { ArrowRight, Check, CheckCircle2, Clock, MoveRight, Sparkles, Star, Sun } from "lucide-react";
+import AreaIcon from "@/components/AreaIcon";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import QuickAdd from "@/components/QuickAdd";
 import { emitChanged, toast } from "@/components/toast";
 import { addDays, api, fmtMinutes, fmtTime, relDay, useApi, ymd } from "@/lib/client";
-import { AREAS, eventColor, PRIORITY_COLOR, type EventRow, type ProjectStats, type Suggestion, type Task } from "@/lib/types";
+import { eventColor, PRIORITY_COLOR, type EventRow, type ProjectStats, type Suggestion, type Task } from "@/lib/types";
 
 type PlanData = {
   date: string;
@@ -296,7 +297,7 @@ export default function PlanPage() {
                       </span>
                       {p && (
                         <span className="chip" style={{ background: `${p.color}22`, color: p.color }}>
-                          {AREAS[p.area]?.icon} {p.name}
+                          <AreaIcon area={p.area} size={12} /> {p.name}
                         </span>
                       )}
                       {alreadyToday && <span className="chip bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15">Bugün {fmtTime(t.event_start!)}</span>}

@@ -2,44 +2,97 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Tasarım sistemi: design-system/MASTER.md (Soft UI Evolution · odak mavisi + çalışma yeşili + seri turuncusu) */
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --color-brand-50: #eef2ff;
-  --color-brand-100: #e0e7ff;
-  --color-brand-500: #6366f1;
-  --color-brand-600: #4f46e5;
-  --color-brand-700: #4338ca;
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-success-500: #10b981;
+  --color-success-600: #059669;
+  --color-streak-500: #f97316;
+  --color-streak-600: #ea580c;
 }
 
 :root {
-  --bg: #f6f7fb;
+  --bg: #f8fafc;
   --panel: #ffffff;
-  --border: #e5e7eb;
-  --text: #111827;
-  --muted: #6b7280;
+  --panel-2: #f1f5f9;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --muted: #64748b;
+  --primary: #2563eb;
+  --primary-soft: #dbeafe;
+  --success: #059669;
+  --streak: #ea580c;
+  --danger: #dc2626;
+  --shadow-sm: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 16px rgb(15 23 42 / 0.05);
+  --shadow-md: 0 8px 32px rgb(15 23 42 / 0.12);
 }
 .dark {
   color-scheme: dark;
-  --bg: #0b0d12;
-  --panel: #141821;
-  --border: #262b36;
-  --text: #e5e7eb;
-  --muted: #9ca3af;
+  --bg: #0b1120;
+  --panel: #111827;
+  --panel-2: #1e293b;
+  --border: #1f2a3c;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --primary: #3b82f6;
+  --primary-soft: rgb(59 130 246 / 0.16);
+  --success: #10b981;
+  --streak: #f97316;
+  --danger: #f87171;
+  --shadow-sm: none;
+  --shadow-md: 0 8px 32px rgb(0 0 0 / 0.5);
 }
 
 body {
   background: var(--bg);
   color: var(--text);
+  line-height: 1.5;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Erişilebilirlik: görünür odak, tıklanabilir imleç, dokunmatikte 44 px hedef */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+summary,
+label:has(input[type="checkbox"]) {
+  cursor: pointer;
+}
+button,
+a {
+  touch-action: manipulation;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 @utility card {
-  @apply rounded-2xl border p-4;
+  @apply rounded-2xl border p-4 md:p-5;
   background: var(--panel);
   border-color: var(--border);
+  box-shadow: var(--shadow-sm);
 }
 @utility panel {
   background: var(--panel);
   border-color: var(--border);
+}
+@utility surface-2 {
+  background: var(--panel-2);
 }
 @utility muted {
   color: var(--muted);
@@ -48,23 +101,28 @@ body {
   border-color: var(--border);
 }
 @utility input {
-  @apply w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-brand-500/40;
+  @apply w-full rounded-xl border px-3 py-2 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15;
   background: var(--panel);
   border-color: var(--border);
   color: var(--text);
+  min-height: 2.5rem;
 }
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50;
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold transition duration-150 select-none active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 disabled:active:scale-100;
+  min-height: 2.5rem;
 }
 @utility btn-primary {
-  @apply btn bg-brand-600 text-white hover:bg-brand-700;
+  @apply btn bg-brand-600 text-white shadow-sm shadow-brand-600/25 hover:bg-brand-700;
+}
+@utility btn-success {
+  @apply btn bg-success-600 text-white shadow-sm shadow-success-600/25 hover:bg-success-500;
 }
 @utility btn-ghost {
-  @apply btn border hover:bg-black/5 dark:hover:bg-white/5;
+  @apply btn border hover:bg-black/[0.04] dark:hover:bg-white/[0.06];
   border-color: var(--border);
 }
 @utility btn-danger {
-  @apply btn text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40;
+  @apply btn text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40;
 }
 @utility chip {
   @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium;
@@ -73,38 +131,122 @@ body {
   @apply mb-1 block text-xs font-medium;
   color: var(--muted);
 }
+@utility eyebrow {
+  @apply text-xs font-semibold uppercase tracking-wider;
+}
+
+@media (pointer: coarse) {
+  .btn,
+  .btn-primary,
+  .btn-success,
+  .btn-ghost,
+  .btn-danger {
+    min-height: 44px;
+  }
+  .input {
+    min-height: 44px;
+    font-size: 16px; /* iOS'ta otomatik yakınlaştırmayı önler */
+  }
+}
+
+/* Giriş animasyonları (hareket azaltılmışsa yukarıdaki kural kapatır) */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-rise {
+  animation: rise 220ms ease-out both;
+}
+@keyframes pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.animate-pop {
+  animation: pop 260ms ease-out both;
+}
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+.skeleton {
+  border-radius: 0.75rem;
+  background: linear-gradient(90deg, var(--panel-2) 25%, var(--border) 37%, var(--panel-2) 63%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+/* Konfeti (kutlama) */
+@keyframes confetti-fall {
+  0% {
+    transform: translate3d(0, -10vh, 0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--dx), 105vh, 0) rotate(var(--rot));
+    opacity: 0.9;
+  }
+}
+.confetti-piece {
+  position: fixed;
+  top: 0;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  z-index: 100;
+  pointer-events: none;
+  animation: confetti-fall var(--dur) cubic-bezier(0.2, 0.6, 0.4, 1) forwards;
+}
 
 /* FullCalendar tema uyarlaması */
 .fc {
   --fc-border-color: var(--border);
   --fc-page-bg-color: var(--panel);
-  --fc-neutral-bg-color: var(--bg);
-  --fc-list-event-hover-bg-color: var(--bg);
-  --fc-today-bg-color: rgb(99 102 241 / 0.08);
+  --fc-neutral-bg-color: var(--panel-2);
+  --fc-list-event-hover-bg-color: var(--panel-2);
+  --fc-today-bg-color: rgb(37 99 235 / 0.06);
   --fc-button-bg-color: var(--panel);
   --fc-button-border-color: var(--border);
   --fc-button-text-color: var(--text);
-  --fc-button-hover-bg-color: var(--bg);
+  --fc-button-hover-bg-color: var(--panel-2);
   --fc-button-hover-border-color: var(--border);
-  --fc-button-active-bg-color: #4f46e5;
-  --fc-button-active-border-color: #4f46e5;
-  --fc-now-indicator-color: #ef4444;
+  --fc-button-active-bg-color: var(--primary);
+  --fc-button-active-border-color: var(--primary);
+  --fc-now-indicator-color: var(--danger);
   font-size: 0.85rem;
 }
 .fc .fc-button {
-  @apply rounded-lg text-sm font-medium shadow-none;
+  @apply rounded-xl text-sm font-semibold shadow-none;
 }
 .fc .fc-button-primary:not(:disabled).fc-button-active {
   color: #fff;
 }
 .fc .fc-toolbar-title {
-  @apply text-lg font-semibold;
+  @apply text-lg font-bold tracking-tight;
 }
 .fc .fc-event {
-  @apply cursor-pointer rounded-md border-0 px-1;
+  @apply cursor-pointer rounded-lg border-0 px-1;
+}
+.fc .fc-col-header-cell-cushion {
+  @apply py-2 font-semibold;
 }
 .fc-theme-standard .fc-list-day-cushion {
-  background: var(--bg);
+  background: var(--panel-2);
 }
 
 @media (max-width: 640px) {
