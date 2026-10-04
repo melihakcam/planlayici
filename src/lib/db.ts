@@ -13,7 +13,7 @@ process.env.TZ = process.env.APP_TIMEZONE || "Europe/Istanbul";
  */
 export const OWNER = "owner";
 
-const SCHEMA_VERSION = 6;
+const SCHEMA_VERSION = 7;
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL);
@@ -124,6 +124,16 @@ CREATE TABLE IF NOT EXISTS journal (
 
 /** Gelecekteki şema değişiklikleri buraya sürüm sırasıyla eklenir. */
 const MIGRATIONS: Record<number, string> = {
+  // Haftalık proje seçimi: bu hafta hangi projeye kaç oturum (45 dk) çalışılacak
+  7: `
+    CREATE TABLE IF NOT EXISTS week_projects (
+      user_id TEXT NOT NULL DEFAULT 'owner',
+      week TEXT NOT NULL,
+      project_id TEXT NOT NULL,
+      sessions INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (user_id, week, project_id)
+    );
+  `,
   // Gün planlama: proje alanları/hedefleri, görevlerin gün seçimi, günlük plan kayıtları
   2: `
     ALTER TABLE projects ADD COLUMN IF NOT EXISTS area TEXT NOT NULL DEFAULT 'kisisel';

@@ -19,7 +19,7 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/icons/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
     shortcuts: [
-      { name: "Günü planla", url: "/planla" },
+      { name: "Planla", url: "/planla" },
       { name: "Odak", url: "/odak" },
       { name: "Görevler", url: "/gorevler" },
     ],

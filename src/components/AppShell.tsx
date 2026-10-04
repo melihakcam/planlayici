@@ -37,7 +37,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     title: "Plan",
     items: [
       { href: "/", label: "Bugün", icon: LayoutDashboard },
-      { href: "/planla", label: "Günü planla", icon: Sunrise },
+      { href: "/planla", label: "Planla", icon: Sunrise },
       { href: "/takvim", label: "Takvim", icon: CalendarDays },
       { href: "/gorevler", label: "Görevler", icon: CheckSquare },
       { href: "/projeler", label: "Projeler", icon: FolderKanban },
