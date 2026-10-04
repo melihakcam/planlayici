@@ -12,6 +12,7 @@ import {
   CheckSquare,
   Flame,
   FolderKanban,
+  GraduationCap,
   LayoutDashboard,
   Moon,
   MoreHorizontal,
@@ -42,6 +43,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
       { href: "/takvim", label: "Takvim", icon: CalendarDays },
       { href: "/gorevler", label: "Görevler", icon: CheckSquare },
       { href: "/projeler", label: "Projeler", icon: FolderKanban },
+      { href: "/ders-programi", label: "Ders programı", icon: GraduationCap },
     ],
   },
   {
