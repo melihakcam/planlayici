@@ -57,7 +57,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
 const SETTINGS_NAV: NavItem = { href: "/ayarlar", label: "Ayarlar", icon: Settings };
 const NAV: NavItem[] = [...NAV_GROUPS.flatMap((g) => g.items), SETTINGS_NAV];
 /** Mobil alt menü: en sık kullanılanlar (≤ 5 öğe kuralı: 4 + Daha) */
-const MOBILE_MAIN = ["/", "/takvim", "/gorevler", "/odak"];
+const MOBILE_MAIN = ["/", "/planla", "/gorevler", "/projeler"];
 
 type GoogleStatus = { connected: boolean; email: string | null; lastSync: string | null; lastError: string | null };
 
@@ -314,7 +314,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       )}
-      <nav className="glass fixed inset-x-0 bottom-0 z-40 flex border-t pb-[env(safe-area-inset-bottom)] md:hidden" aria-label="Alt menü">
+      <nav className="glass glass-solid fixed inset-x-0 bottom-0 z-40 flex border-t pb-[env(safe-area-inset-bottom)] md:hidden" aria-label="Alt menü">
         {mobileMain.map(({ href, label, icon: Icon }) => (
           <Link
             key={href}

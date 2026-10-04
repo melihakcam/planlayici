@@ -351,3 +351,7 @@ main .hero-gradient h1 {
   50% { box-shadow: 0 0 0 10px rgb(255 255 255 / 0); }
 }
 .cta-pulse { animation: cta-pulse 2.4s ease-out infinite; }
+/* Alt menü: arkasındaki içerik okunmasın diye daha opak */
+.glass-solid {
+  background: color-mix(in srgb, var(--panel) 94%, transparent);
+}
