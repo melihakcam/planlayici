@@ -207,14 +207,16 @@ function ProjectCard({ p, onClick }: { p: ProjectStats; onClick: () => void }) {
 /** Katlanabilir bölüm (Tamamlandı / Red) */
 function Section({ title, items, onEdit }: { title: string; items: ProjectStats[]; onEdit: (p: ProjectStats) => void }) {
   const [open, setOpen] = useState(false);
-  if (items.length === 0) return null;
   return (
     <section>
       <button className="flex items-center gap-1 font-semibold" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
         <ChevronRight size={18} className={`transition-transform ${open ? "rotate-90" : ""}`} />
         {title} <span className="muted font-normal">({items.length})</span>
       </button>
-      {open && (
+      {open && items.length === 0 && (
+        <p className="muted mt-2 text-sm">Henüz yok. Bir projeyi açıp Durum'dan "{title}" seçince buraya taşınır.</p>
+      )}
+      {open && items.length > 0 && (
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((p) => (
             <ProjectCard key={p.id} p={p} onClick={() => onEdit(p)} />
