@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpRight, CalendarClock, FolderKanban, Lightbulb, Plus, Trash2 } from "lucide-react";
+import { ArrowUpRight, Ban, CalendarClock, ChevronRight, FolderKanban, Lightbulb, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import Modal from "@/components/Modal";
 import QuickAdd from "@/components/QuickAdd";
@@ -10,7 +10,7 @@ import { api, parseYmd, relDay, useApi, ymd } from "@/lib/client";
 import { type ProjectStats, type Task } from "@/lib/types";
 
 const COLORS = ["#6366f1", "#ec4899", "#f59e0b", "#10b981", "#06b6d4", "#ef4444", "#8b5cf6", "#64748b"];
-const STATUS_LABEL = { active: "Aktif", paused: "Beklemede", done: "Bitti", fikir: "Fikir" } as const;
+const STATUS_LABEL = { active: "Aktif", paused: "Beklemede", done: "Tamamlandı", red: "Red", fikir: "Fikir" } as const;
 
 function daysLeft(date: string) {
   const diff = Math.round((parseYmd(date).getTime() - parseYmd(ymd(new Date())).getTime()) / 864e5);
@@ -23,7 +23,6 @@ export default function ProjectsPage() {
   const projects = useApi<ProjectStats[]>("/api/projects?fikirler=1");
   const tasks = useApi<Task[]>("/api/tasks");
   const [editing, setEditing] = useState<Partial<ProjectStats> | null>(null);
-  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() =>
     onChanged(() => {
@@ -32,7 +31,9 @@ export default function ProjectsPage() {
     }),
   );
 
-  const list = (projects.data ?? []).filter((p) => p.status !== "fikir" && (showArchived || p.status !== "done"));
+  const list = (projects.data ?? []).filter((p) => p.status === "active" || p.status === "paused");
+  const completed = (projects.data ?? []).filter((p) => p.status === "done");
+  const rejected = (projects.data ?? []).filter((p) => p.status === "red");
   const ideas = (projects.data ?? []).filter((p) => p.status === "fikir");
   const [idea, setIdea] = useState("");
   const [ideasOpen, setIdeasOpen] = useState(false);
@@ -46,6 +47,11 @@ export default function ProjectsPage() {
   const promote = async (p: ProjectStats) => {
     await api(`/api/projects/${p.id}`, { method: "PATCH", body: { status: "active" } });
     toast(`"${p.name}" artık bir proje`, "success");
+    projects.reload();
+  };
+  const rejectIdea = async (p: ProjectStats) => {
+    await api(`/api/projects/${p.id}`, { method: "PATCH", body: { status: "red" } });
+    toast(`"${p.name}" Red'e taşındı`, "success");
     projects.reload();
   };
   const removeIdea = async (p: ProjectStats) => {
@@ -66,10 +72,6 @@ export default function ProjectsPage() {
           <p className="muted text-sm">Her projeye haftalık bir saat hedefi ver; planlama dengeyi buna göre kurar.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <label className="muted flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
-            Bitenleri göster
-          </label>
           <button className="btn-ghost" onClick={() => setIdeasOpen(true)}>
             <Lightbulb size={16} className="text-amber-500" /> Fikirler{ideas.length ? ` (${ideas.length})` : ""}
           </button>
@@ -99,43 +101,15 @@ export default function ProjectsPage() {
       )}
 
       {list.length > 0 && (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {list.map((p) => (
-                <button key={p.id} onClick={() => setEditing(p)} className={`card text-left transition hover:border-brand-500 ${p.status !== "active" ? "opacity-60" : ""}`}>
-                  <div className="flex items-start gap-2">
-                    <span className="mt-1.5 h-3 w-3 shrink-0 rounded-full" style={{ background: p.color }} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold">{p.name}</p>
-                      <p className="muted text-xs">
-                        {p.open_tasks} açık iş · {p.done_tasks} bitti
-                        {p.status !== "active" && ` · ${STATUS_LABEL[p.status]}`}
-                      </p>
-                    </div>
-                  </div>
-                  {p.deadline && (
-                    <p className={`mt-2 text-xs ${daysLeft(p.deadline).cls}`}>
-                      <CalendarClock size={12} className="mr-1 inline" />
-                      Teslim {relDay(p.deadline)} · {daysLeft(p.deadline).text}
-                    </p>
-                  )}
-                  {p.weekly_hours > 0 ? (
-                    <div className="mt-3">
-                      <div className="mb-1 flex justify-between text-xs">
-                        <span className="muted">Bu hafta</span>
-                        <span className="tabular-nums">
-                          {p.week_done_h}
-                          {p.week_planned_h > 0 && <span className="muted"> +{p.week_planned_h}</span>} / {p.weekly_hours} sa
-                        </span>
-                      </div>
-                      <Bar done={p.week_done_h} planned={p.week_planned_h} target={p.weekly_hours} color={p.color} />
-                    </div>
-                  ) : (
-                    <p className="muted mt-3 text-xs">Haftalık hedef yok</p>
-                  )}
-                </button>
-              ))}
-            </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {list.map((p) => (
+            <ProjectCard key={p.id} p={p} onClick={() => setEditing(p)} />
+          ))}
+        </div>
       )}
+
+      <Section title="Tamamlandı" items={completed} onEdit={setEditing} />
+      <Section title="Red" items={rejected} onEdit={setEditing} />
 
 
       {/* Fikirler: aklına gelen, belki ileride proje olacak şeyler (planlamaya girmez) */}
@@ -165,6 +139,9 @@ export default function ProjectsPage() {
               <button className="btn-ghost shrink-0 text-xs" onClick={() => promote(p)} title="Projeye dönüştür">
                 <ArrowUpRight size={14} /> Projeye dönüştür
               </button>
+              <button className="btn-ghost shrink-0 text-xs" onClick={() => rejectIdea(p)} title="Red'e taşı">
+                <Ban size={14} /> Reddet
+              </button>
               <button className="btn-danger h-10 w-10 shrink-0 p-0" onClick={() => removeIdea(p)} aria-label={`"${p.name}" fikrini sil`}>
                 <Trash2 size={16} />
               </button>
@@ -185,6 +162,66 @@ export default function ProjectsPage() {
         }}
       />
     </div>
+  );
+}
+
+function ProjectCard({ p, onClick }: { p: ProjectStats; onClick: () => void }) {
+  return (
+    <button onClick={onClick} className={`card text-left transition hover:border-brand-500 ${p.status !== "active" ? "opacity-60" : ""}`}>
+      <div className="flex items-start gap-2">
+        <span className="mt-1.5 h-3 w-3 shrink-0 rounded-full" style={{ background: p.color }} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-semibold">{p.name}</p>
+          <p className="muted text-xs">
+            {p.open_tasks} açık iş · {p.done_tasks} bitti
+            {p.status !== "active" && ` · ${STATUS_LABEL[p.status]}`}
+          </p>
+        </div>
+      </div>
+      {p.deadline && (p.status === "active" || p.status === "paused") && (
+        <p className={`mt-2 text-xs ${daysLeft(p.deadline).cls}`}>
+          <CalendarClock size={12} className="mr-1 inline" />
+          Teslim {relDay(p.deadline)} · {daysLeft(p.deadline).text}
+        </p>
+      )}
+      {p.status === "done" || p.status === "red" ? (
+        p.notes && <p className="muted mt-2 line-clamp-2 text-xs">{p.notes}</p>
+      ) : p.weekly_hours > 0 ? (
+        <div className="mt-3">
+          <div className="mb-1 flex justify-between text-xs">
+            <span className="muted">Bu hafta</span>
+            <span className="tabular-nums">
+              {p.week_done_h}
+              {p.week_planned_h > 0 && <span className="muted"> +{p.week_planned_h}</span>} / {p.weekly_hours} sa
+            </span>
+          </div>
+          <Bar done={p.week_done_h} planned={p.week_planned_h} target={p.weekly_hours} color={p.color} />
+        </div>
+      ) : (
+        <p className="muted mt-3 text-xs">Haftalık hedef yok</p>
+      )}
+    </button>
+  );
+}
+
+/** Katlanabilir bölüm (Tamamlandı / Red) */
+function Section({ title, items, onEdit }: { title: string; items: ProjectStats[]; onEdit: (p: ProjectStats) => void }) {
+  const [open, setOpen] = useState(false);
+  if (items.length === 0) return null;
+  return (
+    <section>
+      <button className="flex items-center gap-1 font-semibold" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <ChevronRight size={18} className={`transition-transform ${open ? "rotate-90" : ""}`} />
+        {title} <span className="muted font-normal">({items.length})</span>
+      </button>
+      {open && (
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((p) => (
+            <ProjectCard key={p.id} p={p} onClick={() => onEdit(p)} />
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 

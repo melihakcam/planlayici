@@ -66,7 +66,7 @@ export type ProjectInput = Partial<Pick<Project, "name" | "color" | "area" | "st
 function clean(input: ProjectInput) {
   return {
     area: AREA_KEYS.includes(input.area as Area) ? input.area : undefined,
-    status: ["active", "paused", "done", "fikir"].includes(input.status ?? "") ? input.status : undefined,
+    status: ["active", "paused", "done", "red", "fikir"].includes(input.status ?? "") ? input.status : undefined,
     weekly_hours: input.weekly_hours !== undefined ? Math.max(0, Math.min(80, Number(input.weekly_hours) || 0)) : undefined,
   };
 }
